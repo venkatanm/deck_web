@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Home, RotateCcw, RotateCw, Save, Share2, Download, Play, HelpCircle } from "lucide-react";
+import { Home, RotateCcw, RotateCw, Save, Share2, Download, Play, HelpCircle, Wand2 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
+import ImportFromAIModal from "./ImportFromAIModal";
 
 const ToolBtn = ({ onClick, disabled, title, children }) => (
   <button
@@ -29,6 +30,7 @@ export default function TopBar({ onShare, onDownload, onPresent }) {
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [localTitle, setLocalTitle] = useState(title);
+  const [showImport, setShowImport] = useState(false);
 
   const handleTitleBlur = () => {
     setEditingTitle(false);
@@ -98,6 +100,14 @@ export default function TopBar({ onShare, onDownload, onPresent }) {
       <div className="flex items-center gap-2">
         <button
           type="button"
+          onClick={() => setShowImport(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-lg transition-colors"
+        >
+          <Wand2 className="w-3.5 h-3.5" />
+          Import from AI
+        </button>
+        <button
+          type="button"
           onClick={() => setShowShortcuts(true)}
           title="Keyboard shortcuts (?)"
           className="p-2 rounded-md hover:bg-gray-100 transition-colors"
@@ -130,6 +140,9 @@ export default function TopBar({ onShare, onDownload, onPresent }) {
         </button>
       </div>
 
+      {showImport && (
+        <ImportFromAIModal onClose={() => setShowImport(false)} />
+      )}
     </header>
   );
 }

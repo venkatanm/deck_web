@@ -15,6 +15,8 @@ import Onboarding from "./components/Onboarding";
 import ErrorBoundary from "./components/ErrorBoundary";
 import useEditorStore from "./store/useEditorStore";
 import { useToast } from "./components/Toast.jsx";
+import GenerationStatusBar from "./components/GenerationStatusBar";
+import { shallow } from "zustand/shallow";
 
 export default function App() {
   const [appReady, setAppReady] = useState(false);
@@ -32,6 +34,10 @@ export default function App() {
   const presentMode = useEditorStore((s) => s.presentMode);
   const pages = useEditorStore((s) => s.pages);
   const canvasSize = useEditorStore((s) => s.canvasSize);
+
+  useEffect(() => {
+    useEditorStore.getState().loadBrandKit();
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem("canva_autosave");
@@ -67,6 +73,14 @@ export default function App() {
   const setPresentMode = useEditorStore((s) => s.setPresentMode);
   const showShortcuts = useEditorStore((s) => s.showShortcuts);
   const setShowShortcuts = useEditorStore((s) => s.setShowShortcuts);
+  const {
+    status,
+    slideCount,
+    totalSlides,
+    title: streamTitle,
+    error,
+  } = useEditorStore((s) => s.pipelineStream, shallow);
+  const resetPipelineStream = useEditorStore((s) => s.resetPipelineStream);
 
   const handleContextMenu = (x, y, elementId) => {
     setContextMenu({ visible: true, x, y, elementId });
@@ -93,9 +107,17 @@ export default function App() {
 
       <Toolbar />
 
-        <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden">
         <Sidebar />
         <div className="flex flex-col flex-1 overflow-hidden">
+          <GenerationStatusBar
+            status={status}
+            slideCount={slideCount}
+            totalSlides={totalSlides}
+            title={streamTitle}
+            error={error}
+            onDismiss={resetPipelineStream}
+          />
           <ErrorBoundary>
             <Canvas onContextMenu={handleContextMenu} />
           </ErrorBoundary>

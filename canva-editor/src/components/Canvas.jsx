@@ -20,10 +20,15 @@ import { getStroke } from "perfect-freehand";
 import useEditorStore from "../store/useEditorStore";
 import { useToast } from "./Toast.jsx";
 import { getSnapPosition } from "../utils/snapGuides";
+import { useImageSrc } from "../hooks/useImageSrc";
 import Rulers from "./Rulers";
 import MiniMap from "./MiniMap";
 import CropOverlay from "./CropOverlay";
 import ChartElement from "./charts/ChartElement";
+import TableElement from "./TableElement";
+import GraphicElement from "./GraphicElement";
+import StatBlockElement from "./StatBlockElement";
+import TimelineElement from "./TimelineElement";
 
 function getSvgPathFromStroke(points, closed = true) {
   const len = points.length;
@@ -44,6 +49,92 @@ function getSvgPathFromStroke(points, closed = true) {
 
 const HEART_PATH = "M28 46 C28 46 8 34 8 20 C8 13 13 8 20 8 C24 8 28 12 28 12 C28 12 32 8 36 8 C43 8 48 13 48 20 C48 34 28 46 28 46Z";
 const DIAMOND_PATH = "M28,4 L52,28 L28,52 L4,28 Z";
+
+function getAnchorPoint(el, anchor) {
+  const cx = el.x + el.width / 2;
+  const cy = el.y + el.height / 2;
+  switch (anchor) {
+    case "top":
+      return { x: cx, y: el.y };
+    case "bottom":
+      return { x: cx, y: el.y + el.height };
+    case "left":
+      return { x: el.x, y: cy };
+    case "right":
+      return { x: el.x + el.width, y: cy };
+    default:
+      return { x: cx, y: cy };
+  }
+}
+
+function getElbowPoints(from, to) {
+  const midX = (from.x + to.x) / 2;
+  const midY = (from.y + to.y) / 2;
+  const dx = Math.abs(to.x - from.x);
+  const dy = Math.abs(to.y - from.y);
+  if (dx > dy) {
+    return [from.x, from.y, midX, from.y, midX, to.y, to.x, to.y];
+  }
+  return [from.x, from.y, from.x, midY, to.x, midY, to.x, to.y];
+}
+
+function getFlowchartPath(subtype, w, h) {
+  switch (subtype) {
+    case "decision":
+      return `M ${w / 2} 0 L ${w} ${h / 2} L ${w / 2} ${h} L 0 ${h / 2} Z`;
+    case "terminal": {
+      const r = Math.min(h / 2, 20);
+      return `M ${r} 0 L ${w - r} 0 Q ${w} 0 ${w} ${r} L ${w} ${h - r} Q ${w} ${h} ${w - r} ${h} L ${r} ${h} Q 0 ${h} 0 ${h - r} L 0 ${r} Q 0 0 ${r} 0 Z`;
+    }
+    case "document":
+      return `M 0 0 L ${w} 0 L ${w} ${h * 0.8} Q ${w * 0.75} ${h} ${w * 0.5} ${h * 0.8} Q ${w * 0.25} ${h * 0.6} 0 ${h * 0.8} Z`;
+    case "database": {
+      const ry = h * 0.15;
+      return `M 0 ${ry} Q 0 0 ${w / 2} 0 Q ${w} 0 ${w} ${ry} L ${w} ${h - ry} Q ${w} ${h} ${w / 2} ${h} Q 0 ${h} 0 ${h - ry} Z`;
+    }
+    case "parallelogram": {
+      const skew = w * 0.15;
+      return `M ${skew} 0 L ${w} 0 L ${w - skew} ${h} L 0 ${h} Z`;
+    }
+    case "hexagon": {
+      const cx = w / 2;
+      const cy = h / 2;
+      const rx = w / 2;
+      const ry = h / 2;
+      const pts = Array.from({ length: 6 }, (_, i) => {
+        const a = (Math.PI / 3) * i - Math.PI / 6;
+        return `${cx + rx * Math.cos(a)} ${cy + ry * Math.sin(a)}`;
+      });
+      return `M ${pts.join(" L ")} Z`;
+    }
+    case "cloud":
+      return `M ${w * 0.35} ${h * 0.85} Q ${w * 0.05} ${h * 0.85} ${w * 0.05} ${h * 0.6} Q ${w * 0.05} ${h * 0.35} ${w * 0.25} ${h * 0.3} Q ${w * 0.2} ${h * 0.1} ${w * 0.45} ${h * 0.1} Q ${w * 0.55} 0 ${w * 0.65} ${h * 0.1} Q ${w * 0.85} ${h * 0.05} ${w * 0.9} ${h * 0.3} Q ${w * 1.05} ${h * 0.3} ${w * 0.98} ${h * 0.55} Q ${w} ${h * 0.85} ${w * 0.7} ${h * 0.85} Z`;
+    default:
+      return null;
+  }
+}
+
+function getCalloutPath(width, height, tailDir, cornerRadius = 8) {
+  const r = cornerRadius;
+  const tw = width * 0.2;
+  const th = height * 0.28;
+  const tx = width * 0.25;
+
+  switch (tailDir) {
+    case "bottom-left":
+      return `M ${r} 0 L ${width - r} 0 Q ${width} 0 ${width} ${r} L ${width} ${height - r - th} Q ${width} ${height - th} ${width - r} ${height - th} L ${tx + tw} ${height - th} L ${tx - tw * 0.5} ${height} L ${tx} ${height - th} L ${r} ${height - th} Q 0 ${height - th} 0 ${height - r - th} L 0 ${r} Q 0 0 ${r} 0 Z`;
+    case "bottom-right":
+      return `M ${r} 0 L ${width - r} 0 Q ${width} 0 ${width} ${r} L ${width} ${height - r - th} Q ${width} ${height - th} ${width - r} ${height - th} L ${width - tx + tw * 0.5} ${height - th} L ${width - tx + tw} ${height} L ${width - tx} ${height - th} L ${r} ${height - th} Q 0 ${height - th} 0 ${height - r - th} L 0 ${r} Q 0 0 ${r} 0 Z`;
+    case "top-left":
+      return `M ${r} ${th} L ${tx} ${th} L ${tx - tw * 0.5} 0 L ${tx + tw} ${th} L ${width - r} ${th} Q ${width} ${th} ${width} ${r + th} L ${width} ${height - r} Q ${width} ${height} ${width - r} ${height} L ${r} ${height} Q 0 ${height} 0 ${height - r} L 0 ${r + th} Q 0 ${th} ${r} ${th} Z`;
+    case "top-right":
+      return `M ${width - r} ${th} L ${width - tx} ${th} L ${width - tx + tw * 0.5} 0 L ${width - tx - tw} ${th} L ${r} ${th} Q 0 ${th} 0 ${r + th} L 0 ${height - r} Q 0 ${height} ${r} ${height} L ${width - r} ${height} Q ${width} ${height} ${width} ${height - r} L ${width} ${r + th} Q ${width} ${th} ${width - r} ${th} Z`;
+    case "left":
+      return `M ${tw} ${r} L ${tw + width - tw - r} ${r} Q ${width} ${r} ${width} ${r * 2} L ${width} ${height - r} Q ${width} ${height} ${width - r} ${height} L ${tw + r} ${height} Q ${tw} ${height} ${tw} ${height - r} L ${tw} ${height * 0.5 + th * 0.5} L 0 ${height * 0.5} L ${tw} ${height * 0.5 - th * 0.5} L ${tw} ${r} Q ${tw} 0 ${tw + r} 0 L ${width - r} 0 Q ${width} 0 ${width} ${r} Z`;
+    default:
+      return `M ${r} 0 L ${width - tw - r} 0 Q ${width - tw} 0 ${width - tw} ${r} L ${width - tw} ${height * 0.5 - th * 0.5} L ${width} ${height * 0.5} L ${width - tw} ${height * 0.5 + th * 0.5} L ${width - tw} ${height - r} Q ${width - tw} ${height} ${width - tw - r} ${height} L ${r} ${height} Q 0 ${height} 0 ${height - r} L 0 ${r} Q 0 0 ${r} 0 Z`;
+  }
+}
 
 // Shapes that Konva positions from center, not top-left
 const CENTERED_TYPES = ["circle", "triangle", "star", "pentagon"];
@@ -514,7 +605,56 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
     );
   }
 
+  function applyTextCase(text, textCase) {
+    if (!text) return text;
+    if (textCase === "upper") return text.toUpperCase();
+    if (textCase === "lower") return text.toLowerCase();
+    if (textCase === "title") return text.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    return text;
+  }
+
   if (el.type === "text") {
+    const effectProps = {};
+    if (el.textEffect === "shadow") {
+      effectProps.shadowColor = el.effectColor || "#000000";
+      effectProps.shadowBlur = el.effectBlur ?? 8;
+      effectProps.shadowOffsetX = el.effectOffset?.x ?? 3;
+      effectProps.shadowOffsetY = el.effectOffset?.y ?? 3;
+      effectProps.shadowOpacity = el.effectOpacity ?? 0.4;
+      effectProps.shadowEnabled = true;
+    }
+    if (el.textEffect === "glow") {
+      effectProps.shadowColor = el.effectColor || el.fill || "#7c3aed";
+      effectProps.shadowBlur = el.effectBlur ?? 16;
+      effectProps.shadowOffsetX = 0;
+      effectProps.shadowOffsetY = 0;
+      effectProps.shadowOpacity = 0.8;
+      effectProps.shadowEnabled = true;
+    }
+    if (el.textEffect === "lifted") {
+      effectProps.shadowColor = "#000000";
+      effectProps.shadowBlur = 20;
+      effectProps.shadowOffsetX = 0;
+      effectProps.shadowOffsetY = 8;
+      effectProps.shadowOpacity = 0.25;
+      effectProps.shadowEnabled = true;
+    }
+    if (el.textEffect === "hollow") {
+      effectProps.fillEnabled = false;
+      effectProps.stroke = el.fill || "#1e293b";
+      effectProps.strokeWidth = 1.5;
+    }
+    if (el.textEffect === "neon") {
+      effectProps.fill = "#ffffff";
+      effectProps.shadowColor = el.effectColor || "#7c3aed";
+      effectProps.shadowBlur = 20;
+      effectProps.shadowOffsetX = 0;
+      effectProps.shadowOffsetY = 0;
+      effectProps.shadowOpacity = 1;
+      effectProps.shadowEnabled = true;
+    }
+    const showBgRect = el.textEffect === "background";
+
     const handleDblClick = () => {
       const node = textRef.current;
       if (!node || !stageContainerRef?.current) return;
@@ -551,6 +691,7 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
 
       node.hide();
       setEditing(true);
+      useEditorStore.getState().setTextEditing(true);
       textarea.focus();
       textarea.select();
 
@@ -560,6 +701,7 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
         if (textarea.parentNode) document.body.removeChild(textarea);
         node.show();
         setEditing(false);
+        useEditorStore.getState().commitTextSnapshot();
         setTimeout(() => {
           if (node) {
             const h = node.height();
@@ -574,6 +716,7 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
           if (textarea.parentNode) document.body.removeChild(textarea);
           node.show();
           setEditing(false);
+          useEditorStore.getState().setTextEditing(false);
         }
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
@@ -585,21 +728,34 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
 
     return (
       <>
+        {showBgRect && (
+          <Rect
+            x={el.x - (el.bgPadding || 8)}
+            y={el.y - (el.bgPadding || 8) / 2}
+            width={(el.width || 200) + (el.bgPadding || 8) * 2}
+            height={(el.fontSize || 16) * 1.3 + (el.bgPadding || 8)}
+            fill={el.bgColor || "#000000"}
+            opacity={el.bgOpacity ?? 0.6}
+            cornerRadius={4}
+            listening={false}
+          />
+        )}
         <KonvaText
           ref={textRef}
           x={el.x}
           y={el.y}
           width={el.width}
-          text={el.text || "Double-click to edit"}
+          text={applyTextCase(el.text || "Double-click to edit", el.textCase)}
           fontSize={el.fontSize || 24}
           fontFamily={el.fontFamily || "Inter"}
           fontStyle={el.fontStyle || "normal"}
-          fill={el.fill || "#1e293b"}
+          fill={el.textEffect === "hollow" ? "transparent" : el.fill || "#1e293b"}
           align={el.align || "left"}
           textDecoration={el.textDecoration || ""}
           lineHeight={el.lineHeight ?? 1.2}
           letterSpacing={el.letterSpacing ?? 0}
           wrap="word"
+          {...effectProps}
           {...commonProps}
           onDblClick={handleDblClick}
           onDblTap={handleDblClick}
@@ -698,6 +854,376 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
             resizeEnabled={!el.locked}
             boundBoxFunc={(oldBox, newBox) => {
               if (newBox.width < 200 || newBox.height < 150) return oldBox;
+              return newBox;
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (el.type === "table") {
+    return (
+      <>
+        <Rect
+          {...commonProps}
+          x={el.x}
+          y={el.y}
+          width={el.width}
+          height={el.height}
+          fill="transparent"
+          stroke={isSelected ? "#7c3aed" : "transparent"}
+          strokeWidth={isSelected ? 2 : 0}
+          dash={[4, 3]}
+        />
+        {isSelected && selectedIds.length === 1 && (
+          <Transformer
+            ref={transformerRef}
+            rotateEnabled={!el.locked}
+            resizeEnabled={!el.locked}
+            boundBoxFunc={(oldBox, newBox) => {
+              if (newBox.width < 100 || newBox.height < 60) return oldBox;
+              return newBox;
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (el.type === "statBlock") {
+    return (
+      <>
+        <Rect
+          {...commonProps}
+          x={el.x}
+          y={el.y}
+          width={el.width}
+          height={el.height}
+          fill="transparent"
+          stroke={isSelected ? "#7c3aed" : "transparent"}
+          strokeWidth={isSelected ? 2 : 0}
+          dash={[4, 3]}
+        />
+        {isSelected && selectedIds.length === 1 && (
+          <Transformer
+            ref={transformerRef}
+            rotateEnabled={!el.locked}
+            resizeEnabled={!el.locked}
+            boundBoxFunc={(oldBox, newBox) => {
+              if (newBox.width < 100 || newBox.height < 60) return oldBox;
+              return newBox;
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (el.type === "timeline") {
+    return (
+      <>
+        <Rect
+          {...commonProps}
+          x={el.x}
+          y={el.y}
+          width={el.width}
+          height={el.height}
+          fill="transparent"
+          stroke={isSelected ? "#7c3aed" : "transparent"}
+          strokeWidth={isSelected ? 2 : 0}
+          dash={[4, 3]}
+        />
+        {isSelected && selectedIds.length === 1 && (
+          <Transformer
+            ref={transformerRef}
+            rotateEnabled={!el.locked}
+            resizeEnabled={!el.locked}
+            boundBoxFunc={(oldBox, newBox) => {
+              if (newBox.width < 200 || newBox.height < 80) return oldBox;
+              return newBox;
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (el.type === "callout") {
+    const pathData = getCalloutPath(
+      el.width,
+      el.height,
+      el.tailDir || "bottom-left",
+      el.cornerRadius || 10
+    );
+    const tailHeight = el.height * 0.28;
+    return (
+      <>
+        <Group
+          ref={shapeRef}
+          id={el.id}
+          x={el.x}
+          y={el.y}
+          rotation={el.rotation || 0}
+          draggable={!el.locked}
+          onClick={(e) => {
+            e.cancelBubble = true;
+            setSelectedIds([el.id]);
+          }}
+          onDragEnd={(e) => {
+            updateElement(el.id, { x: e.target.x(), y: e.target.y() });
+          }}
+          onTransformEnd={(e) => {
+            const node = shapeRef.current;
+            if (!node) return;
+            const sx = node.scaleX();
+            node.scaleX(1);
+            const sy = node.scaleY();
+            node.scaleY(1);
+            updateElement(el.id, {
+              x: node.x(),
+              y: node.y(),
+              width: Math.max(60, el.width * sx),
+              height: Math.max(40, el.height * sy),
+              rotation: node.rotation(),
+            });
+          }}
+        >
+          <Path
+            data={pathData}
+            fill={el.fill || "#7c3aed"}
+            stroke={el.stroke || undefined}
+            strokeWidth={el.strokeWidth || 0}
+            opacity={el.opacity ?? 1}
+            listening={true}
+          />
+          {el.text && (
+            <KonvaText
+              x={12}
+              y={12}
+              width={el.width - 24}
+              height={el.height - 24 - tailHeight}
+              text={el.text}
+              fontSize={el.fontSize || 14}
+              fontFamily={el.fontFamily || "Inter"}
+              fill={el.textColor || "#ffffff"}
+              align="center"
+              verticalAlign="middle"
+              wrap="word"
+              listening={false}
+            />
+          )}
+        </Group>
+        {isSelected && selectedIds.length === 1 && (
+          <Transformer
+            ref={transformerRef}
+            rotateEnabled={!el.locked}
+            resizeEnabled={!el.locked}
+            boundBoxFunc={(oldBox, newBox) => {
+              if (newBox.width < 60 || newBox.height < 40) return oldBox;
+              return newBox;
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (el.type === "frame") {
+    return (
+      <FrameElement
+        el={el}
+        commonProps={commonProps}
+        shapeRef={shapeRef}
+        transformerRef={transformerRef}
+        isSelected={isSelected}
+        selectedIds={selectedIds}
+        updateElement={updateElement}
+        setSelectedIds={setSelectedIds}
+      />
+    );
+  }
+
+  if (el.type === "connector") {
+    const elements = useEditorStore.getState().getCurrentElements();
+    const fromEl = elements.find((e) => e.id === el.fromId);
+    const toEl = elements.find((e) => e.id === el.toId);
+
+    let points;
+    if (el.staticPoints && el.staticPoints.length >= 4) {
+      points = el.staticPoints;
+    } else if (fromEl && toEl) {
+      const from = getAnchorPoint(fromEl, el.fromAnchor || "bottom");
+      const to = getAnchorPoint(toEl, el.toAnchor || "top");
+      points =
+        el.routing === "elbow"
+          ? getElbowPoints(from, to)
+          : [from.x, from.y, to.x, to.y];
+    } else {
+      points = [el.x || 0, el.y || 0, (el.x || 0) + 100, (el.y || 0) + 100];
+    }
+
+    const hasArrow = el.arrowEnd !== false;
+
+    return (
+      <>
+        <Arrow
+          ref={shapeRef}
+          id={el.id}
+          points={points}
+          pointerLength={hasArrow ? 10 : 0}
+          pointerWidth={hasArrow ? 8 : 0}
+          fill={el.stroke || "#7c3aed"}
+          stroke={el.stroke || "#7c3aed"}
+          strokeWidth={el.strokeWidth ?? 2}
+          opacity={el.opacity ?? 1}
+          tension={el.routing === "curved" ? 0.5 : 0}
+          onClick={(e) => {
+            e.cancelBubble = true;
+            setSelectedIds([el.id]);
+          }}
+          listening={true}
+          hitStrokeWidth={12}
+        />
+        {el.label && points.length >= 4 && (
+          <KonvaText
+            x={(points[0] + points[points.length - 2]) / 2 - 40}
+            y={(points[1] + points[points.length - 1]) / 2 - 10}
+            width={80}
+            height={20}
+            text={el.label}
+            fontSize={el.labelFontSize || 11}
+            fill={el.stroke || "#7c3aed"}
+            align="center"
+            fontFamily="Inter"
+            listening={false}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (el.type === "flowchart") {
+    const pathData = getFlowchartPath(el.subtype, el.width, el.height);
+    const ShapeEl = pathData ? Path : Rect;
+    const shapeProps = pathData
+      ? { data: pathData }
+      : { width: el.width, height: el.height, cornerRadius: 6 };
+
+    const handleFlowchartClick = (e) => {
+      e.cancelBubble = true;
+      const connectionFromId = useEditorStore.getState().connectionFromId;
+      if (connectionFromId && connectionFromId !== el.id) {
+        useEditorStore.getState().addElement({
+          type: "connector",
+          fromId: connectionFromId,
+          toId: el.id,
+          fromAnchor: "bottom",
+          toAnchor: "top",
+          routing: "elbow",
+          stroke: "#7c3aed",
+          strokeWidth: 2,
+          arrowEnd: true,
+          arrowStart: false,
+          label: "",
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0,
+          rotation: 0,
+          opacity: 1,
+        });
+        useEditorStore.getState().clearConnectionFrom();
+      }
+      setSelectedIds([el.id]);
+    };
+
+    return (
+      <>
+        <ShapeEl
+          ref={shapeRef}
+          id={el.id}
+          x={el.x}
+          y={el.y}
+          {...shapeProps}
+          fill={el.fill || "#ede9fe"}
+          stroke={el.stroke || "#7c3aed"}
+          strokeWidth={el.strokeWidth ?? 2}
+          opacity={el.opacity ?? 1}
+          rotation={el.rotation || 0}
+          draggable={!el.locked}
+          onClick={handleFlowchartClick}
+          onDragEnd={(e) => {
+            updateElement(el.id, { x: e.target.x(), y: e.target.y() });
+          }}
+          onTransformEnd={(e) => {
+            const node = shapeRef.current;
+            if (!node) return;
+            const sx = node.scaleX();
+            node.scaleX(1);
+            const sy = node.scaleY();
+            node.scaleY(1);
+            updateElement(el.id, {
+              x: node.x(),
+              y: node.y(),
+              width: Math.max(40, el.width * sx),
+              height: Math.max(30, el.height * sy),
+              rotation: node.rotation(),
+            });
+          }}
+        />
+        {el.text && (
+          <KonvaText
+            x={el.x + 6}
+            y={el.y + 6}
+            width={el.width - 12}
+            height={el.height - 12}
+            text={el.text}
+            fontSize={el.fontSize || 13}
+            fontFamily={el.fontFamily || "Inter"}
+            fill={el.textColor || "#1e293b"}
+            align="center"
+            verticalAlign="middle"
+            wrap="word"
+            listening={false}
+          />
+        )}
+        {isSelected && selectedIds.length === 1 && (
+          <Transformer
+            ref={transformerRef}
+            rotateEnabled={!el.locked}
+            resizeEnabled={!el.locked}
+            boundBoxFunc={(oldBox, newBox) => {
+              if (newBox.width < 40 || newBox.height < 30) return oldBox;
+              return newBox;
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (el.type === "graphic") {
+    return (
+      <>
+        <Rect
+          {...commonProps}
+          x={el.x}
+          y={el.y}
+          width={el.width}
+          height={el.height}
+          fill="transparent"
+          stroke={isSelected ? "#7c3aed" : "transparent"}
+          strokeWidth={isSelected ? 2 : 0}
+          dash={[4, 3]}
+        />
+        {isSelected && selectedIds.length === 1 && (
+          <Transformer
+            ref={transformerRef}
+            rotateEnabled={!el.locked}
+            resizeEnabled={!el.locked}
+            boundBoxFunc={(oldBox, newBox) => {
+              if (newBox.width < 20 || newBox.height < 20) return oldBox;
               return newBox;
             }}
           />
@@ -813,9 +1339,10 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
 
   return null;
 }, (prevProps, nextProps) =>
+  prevProps.el === nextProps.el &&
   prevProps.isSelected === nextProps.isSelected &&
-  prevProps.el?.id === nextProps.el?.id &&
-  JSON.stringify(prevProps.el) === JSON.stringify(nextProps.el)
+  prevProps.canvasSize === nextProps.canvasSize &&
+  prevProps.snapEnabled === nextProps.snapEnabled
 );
 
 function MultiTransformer({ selectedIds }) {
@@ -864,8 +1391,302 @@ function MultiTransformer({ selectedIds }) {
   );
 }
 
+function getFrameClipFunc(shape, w, h, cornerRadius = 20) {
+  return (ctx) => {
+    ctx.beginPath();
+    switch (shape) {
+      case "circle":
+        ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
+        break;
+      case "roundedRect": {
+        const r = cornerRadius;
+        ctx.moveTo(r, 0);
+        ctx.lineTo(w - r, 0);
+        ctx.quadraticCurveTo(w, 0, w, r);
+        ctx.lineTo(w, h - r);
+        ctx.quadraticCurveTo(w, h, w - r, h);
+        ctx.lineTo(r, h);
+        ctx.quadraticCurveTo(0, h, 0, h - r);
+        ctx.lineTo(0, r);
+        ctx.quadraticCurveTo(0, 0, r, 0);
+        break;
+      }
+      case "hexagon": {
+        const cx = w / 2;
+        const cy = h / 2;
+        const rx = w / 2;
+        const ry = h / 2;
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i - Math.PI / 6;
+          const px = cx + rx * Math.cos(angle);
+          const py = cy + ry * Math.sin(angle);
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        break;
+      }
+      case "diamond": {
+        const cx = w / 2;
+        const cy = h / 2;
+        ctx.moveTo(cx, 0);
+        ctx.lineTo(w, cy);
+        ctx.lineTo(cx, h);
+        ctx.lineTo(0, cy);
+        ctx.closePath();
+        break;
+      }
+      case "triangle":
+        ctx.moveTo(w / 2, 0);
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.closePath();
+        break;
+      default:
+        ctx.rect(0, 0, w, h);
+    }
+    ctx.clip();
+  };
+}
+
+function FrameElement({ el, commonProps, shapeRef, transformerRef, isSelected, selectedIds, updateElement, setSelectedIds }) {
+  const [img] = useImage(el.src || null);
+  const w = el.width;
+  const h = el.height;
+  const scale = el.imageScale || 1;
+  const offsetX = el.imageOffsetX || 0;
+  const offsetY = el.imageOffsetY || 0;
+  let imgX = offsetX;
+  let imgY = offsetY;
+  let imgW = w * scale;
+  let imgH = h * scale;
+
+  if (img) {
+    const imgAspect = img.width / img.height;
+    const frameAspect = w / h;
+    if (el.imageFit === "cover") {
+      if (imgAspect > frameAspect) {
+        imgH = h * scale;
+        imgW = imgH * imgAspect;
+        imgX = (w - imgW) / 2 + offsetX;
+        imgY = offsetY;
+      } else {
+        imgW = w * scale;
+        imgH = imgW / imgAspect;
+        imgX = offsetX;
+        imgY = (h - imgH) / 2 + offsetY;
+      }
+    } else if (el.imageFit === "contain") {
+      if (imgAspect > frameAspect) {
+        imgW = w * scale;
+        imgH = imgW / imgAspect;
+        imgX = offsetX;
+        imgY = (h - imgH) / 2 + offsetY;
+      } else {
+        imgH = h * scale;
+        imgW = imgH * imgAspect;
+        imgX = (w - imgW) / 2 + offsetX;
+        imgY = offsetY;
+      }
+    }
+  }
+
+  const clip = getFrameClipFunc(el.frameShape, w, h, el.cornerRadius || 20);
+
+  useEffect(() => {
+    if (isSelected && shapeRef.current && transformerRef.current) {
+      transformerRef.current.nodes([shapeRef.current]);
+      transformerRef.current.getLayer().batchDraw();
+    } else if (transformerRef.current) {
+      transformerRef.current.nodes([]);
+    }
+  }, [isSelected, el.id]);
+
+  return (
+    <>
+      <Group
+        ref={shapeRef}
+        id={el.id}
+        x={el.x}
+        y={el.y}
+        clipFunc={clip}
+        opacity={el.opacity ?? 1}
+        rotation={el.rotation || 0}
+        draggable={!el.locked}
+        onClick={(e) => {
+          e.cancelBubble = true;
+          setSelectedIds([el.id]);
+        }}
+        onDragEnd={(e) => {
+          updateElement(el.id, { x: e.target.x(), y: e.target.y() });
+        }}
+        onTransformEnd={(e) => {
+          const node = shapeRef.current;
+          if (!node) return;
+          const sx = node.scaleX();
+          node.scaleX(1);
+          const sy = node.scaleY();
+          node.scaleY(1);
+          updateElement(el.id, {
+            x: node.x(),
+            y: node.y(),
+            width: Math.max(40, el.width * sx),
+            height: Math.max(40, el.height * sy),
+            rotation: node.rotation(),
+          });
+        }}
+      >
+        {img ? (
+          <KonvaImage
+            image={img}
+            x={imgX}
+            y={imgY}
+            width={imgW}
+            height={imgH}
+            listening={false}
+          />
+        ) : (
+          <>
+            <Rect x={0} y={0} width={w} height={h} fill="#f1f5f9" listening={false} />
+            <KonvaText
+              x={0}
+              y={h / 2 - 10}
+              width={w}
+              height={20}
+              text="Drop image here"
+              fontSize={12}
+              fill="#94a3b8"
+              align="center"
+              verticalAlign="middle"
+              listening={false}
+            />
+          </>
+        )}
+      </Group>
+      {el.strokeWidth > 0 && (
+        <FrameBorderShape el={el} />
+      )}
+      {isSelected && selectedIds.length === 1 && (
+        <Transformer
+          ref={transformerRef}
+          rotateEnabled={!el.locked}
+          resizeEnabled={!el.locked}
+          boundBoxFunc={(oldBox, newBox) => {
+            if (newBox.width < 40 || newBox.height < 40) return oldBox;
+            return newBox;
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function FrameBorderShape({ el }) {
+  const w = el.width;
+  const h = el.height;
+  const stroke = el.strokeColor || "#7c3aed";
+  const sw = el.strokeWidth || 2;
+
+  switch (el.frameShape) {
+    case "circle":
+      return (
+        <Ellipse
+          x={el.x + w / 2}
+          y={el.y + h / 2}
+          radiusX={w / 2}
+          radiusY={h / 2}
+          stroke={stroke}
+          strokeWidth={sw}
+          fill="transparent"
+          listening={false}
+        />
+      );
+    case "roundedRect":
+      return (
+        <Rect
+          x={el.x}
+          y={el.y}
+          width={w}
+          height={h}
+          cornerRadius={el.cornerRadius || 20}
+          stroke={stroke}
+          strokeWidth={sw}
+          fill="transparent"
+          listening={false}
+        />
+      );
+    case "hexagon": {
+      const cx = w / 2;
+      const cy = h / 2;
+      const rx = w / 2;
+      const ry = h / 2;
+      const pts = [];
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i - Math.PI / 6;
+        pts.push(`${cx + rx * Math.cos(angle)} ${cy + ry * Math.sin(angle)}`);
+      }
+      const pathData = `M ${pts.join(" L ")} Z`;
+      return (
+        <Path
+          x={el.x}
+          y={el.y}
+          data={pathData}
+          stroke={stroke}
+          strokeWidth={sw}
+          fill="transparent"
+          listening={false}
+        />
+      );
+    }
+    case "diamond": {
+      const cx = w / 2;
+      const cy = h / 2;
+      const pathData = `M ${cx} 0 L ${w} ${cy} L ${cx} ${h} L 0 ${cy} Z`;
+      return (
+        <Path
+          x={el.x}
+          y={el.y}
+          data={pathData}
+          stroke={stroke}
+          strokeWidth={sw}
+          fill="transparent"
+          listening={false}
+        />
+      );
+    }
+    case "triangle": {
+      const pathData = `M ${w / 2} 0 L ${w} ${h} L 0 ${h} Z`;
+      return (
+        <Path
+          x={el.x}
+          y={el.y}
+          data={pathData}
+          stroke={stroke}
+          strokeWidth={sw}
+          fill="transparent"
+          listening={false}
+        />
+      );
+    }
+    default:
+      return (
+        <Rect
+          x={el.x}
+          y={el.y}
+          width={w}
+          height={h}
+          stroke={stroke}
+          strokeWidth={sw}
+          fill="transparent"
+          listening={false}
+        />
+      );
+  }
+}
+
 function ImageElement({ el, commonProps, shapeRef, isSelected, selectedIds = [], transformerRef }) {
-  const [img, status] = useImage(el.src || "", "anonymous");
+  const srcFromId = useImageSrc(el.imageId);
+  const effectiveSrc = el.src || srcFromId;
+  const [img, status] = useImage(effectiveSrc || "", "anonymous");
   const hasFlip = el.scaleX === -1 || el.scaleY === -1;
   const imgPos = hasFlip
     ? { offsetX: el.width / 2, offsetY: el.height / 2, x: el.x + el.width / 2, y: el.y + el.height / 2 }
@@ -1002,7 +1823,6 @@ export function Canvas({ onContextMenu }) {
   const stageContainerRef = useRef(null);
   const stageRef = useRef(null);
   const containerRef = useRef(null);
-  const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
   const drawPointsRef = useRef([]);
   const [guides, setGuides] = useState([]);
   const [marquee, setMarquee] = useState(null);
@@ -1011,63 +1831,52 @@ export function Canvas({ onContextMenu }) {
   const [hoverElement, setHoverElement] = useState(false);
   const toast = useToast();
 
-  useEffect(() => {
-    const updatePos = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      setStagePos({ x: rect.left, y: rect.top });
-    };
-    updatePos();
-    window.addEventListener('resize', updatePos);
-    window.addEventListener('scroll', updatePos, true);
-    return () => {
-      window.removeEventListener('resize', updatePos);
-      window.removeEventListener('scroll', updatePos, true);
-    };
-  }, []);
-  const {
-    canvasSize,
-    setSelectedIds,
-    clearSelection,
-    getCurrentElements,
-    selectedId,
-    selectedIds,
-    deleteElement,
-    deleteSelected,
-    undo,
-    redo,
-    duplicateElement,
-    duplicateSelected,
-    copyElement,
-    pasteElement,
-    moveElementUp,
-    moveElementDown,
-    moveSelected,
-    groupSelected,
-    ungroupSelected,
-    zoom,
-    zoomIn,
-    zoomOut,
-    showGrid,
-    showRulers,
-    snapEnabled,
-    drawMode,
-    setDrawMode,
-    drawColor,
-    drawSize,
-    drawOpacity,
-    addElement,
-    setShowShortcuts,
-    fitToScreen,
-    toggleGrid,
-    toggleRulers,
-    saveProject,
-    title,
-    setPresentMode,
-  } = useEditorStore();
-
-  const elements = getCurrentElements();
+  const canvasSize = useEditorStore((s) => s.canvasSize);
   const currentPageId = useEditorStore((s) => s.currentPageId);
+  const elements = useEditorStore((s) => {
+    const page = s.pages.find((p) => p.id === s.currentPageId);
+    return page?.elements ?? [];
+  });
+  const selectedId = useEditorStore((s) => s.selectedId);
+  const selectedIds = useEditorStore((s) => s.selectedIds);
+  const zoom = useEditorStore((s) => s.zoom);
+  const snapEnabled = useEditorStore((s) => s.snapEnabled);
+  const showGrid = useEditorStore((s) => s.showGrid);
+  const showRulers = useEditorStore((s) => s.showRulers);
+  const drawMode = useEditorStore((s) => s.drawMode);
+
+  const setSelectedIds = useEditorStore((s) => s.setSelectedIds);
+  const clearSelection = useEditorStore((s) => s.clearSelection);
+  const deleteElement = useEditorStore((s) => s.deleteElement);
+  const deleteSelected = useEditorStore((s) => s.deleteSelected);
+  const undo = useEditorStore((s) => s.undo);
+  const redo = useEditorStore((s) => s.redo);
+  const duplicateElement = useEditorStore((s) => s.duplicateElement);
+  const duplicateSelected = useEditorStore((s) => s.duplicateSelected);
+  const copyElement = useEditorStore((s) => s.copyElement);
+  const pasteElement = useEditorStore((s) => s.pasteElement);
+  const moveElementUp = useEditorStore((s) => s.moveElementUp);
+  const moveElementDown = useEditorStore((s) => s.moveElementDown);
+  const moveSelected = useEditorStore((s) => s.moveSelected);
+  const groupSelected = useEditorStore((s) => s.groupSelected);
+  const ungroupSelected = useEditorStore((s) => s.ungroupSelected);
+  const zoomIn = useEditorStore((s) => s.zoomIn);
+  const zoomOut = useEditorStore((s) => s.zoomOut);
+  const setDrawMode = useEditorStore((s) => s.setDrawMode);
+  const addElement = useEditorStore((s) => s.addElement);
+  const setShowShortcuts = useEditorStore((s) => s.setShowShortcuts);
+  const fitToScreen = useEditorStore((s) => s.fitToScreen);
+  const toggleGrid = useEditorStore((s) => s.toggleGrid);
+  const toggleRulers = useEditorStore((s) => s.toggleRulers);
+  const saveProject = useEditorStore((s) => s.saveProject);
+  const setPresentMode = useEditorStore((s) => s.setPresentMode);
+
+  const drawColor = useEditorStore((s) => s.drawColor);
+  const drawSize = useEditorStore((s) => s.drawSize);
+  const drawOpacity = useEditorStore((s) => s.drawOpacity);
+  const title = useEditorStore((s) => s.title);
+
+  const getCurrentElements = useEditorStore((s) => s.getCurrentElements);
 
   useEffect(() => {
     clearSelection();
@@ -1543,17 +2352,35 @@ export function Canvas({ onContextMenu }) {
             })()}
         </Layer>
       </Stage>
-        {/* Chart HTML overlays */}
-        <div className="absolute inset-0 pointer-events-none">
+        {/* Chart, Table, Graphic HTML overlays — positioned relative to Stage container */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ zIndex: 10 }}
+        >
           {elements
             .filter((el) => el.type === "chart" && el.visible !== false)
             .map((el) => (
-              <ChartElement
-                key={el.id}
-                el={el}
-                stagePos={stagePos}
-                zoom={zoom}
-              />
+              <ChartElement key={el.id} el={el} zoom={zoom} />
+            ))}
+          {elements
+            .filter((el) => el.type === "table" && el.visible !== false)
+            .map((el) => (
+              <TableElement key={el.id} el={el} zoom={zoom} />
+            ))}
+          {elements
+            .filter((el) => el.type === "graphic" && el.visible !== false)
+            .map((el) => (
+              <GraphicElement key={el.id} el={el} zoom={zoom} />
+            ))}
+          {elements
+            .filter((el) => el.type === "statBlock" && el.visible !== false)
+            .map((el) => (
+              <StatBlockElement key={el.id} el={el} zoom={zoom} />
+            ))}
+          {elements
+            .filter((el) => el.type === "timeline" && el.visible !== false)
+            .map((el) => (
+              <TimelineElement key={el.id} el={el} zoom={zoom} />
             ))}
         </div>
         <CropOverlay />

@@ -11,12 +11,16 @@ const QUALITY_OPTIONS = [
 ];
 
 export default function DownloadModal({ onClose }) {
+  const toast = useToast();
   const pages = useEditorStore((s) => s.pages);
   const currentPageId = useEditorStore((s) => s.currentPageId);
   const canvasSize = useEditorStore((s) => s.canvasSize);
   const title = useEditorStore((s) => s.title) || "design";
+  const brandKit = useEditorStore((s) => s.brandKit);
+  const primaryLogo = brandKit?.logos?.find((l) => l.type === "primary");
 
   const [fileType, setFileType] = useState("png");
+  const [stampLogo, setStampLogo] = useState(false);
   const [quality, setQuality] = useState("standard");
   const [allPages, setAllPages] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -44,7 +48,7 @@ export default function DownloadModal({ onClose }) {
         await exportPDF(pages, currentPageId, canvasSize, allPages, title);
       } else if (fileType === "pptx") {
         const targetPages = allPages ? pages : [pages.find((p) => p.id === currentPageId)].filter(Boolean);
-        await exportPPTX(targetPages, canvasSize, title);
+        await exportPPTX(targetPages, canvasSize, title, { stampLogo: stampLogo && !!primaryLogo });
       }
       setDone(true);
       toast("Download complete!", "success");
@@ -144,6 +148,24 @@ export default function DownloadModal({ onClose }) {
                 </label>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Stamp brand logo (PPTX only, when logo exists) */}
+        {fileType === "pptx" && primaryLogo && (
+          <div className="mb-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={stampLogo}
+                onChange={(e) => setStampLogo(e.target.checked)}
+                className="accent-purple-600"
+              />
+              <span className="text-sm">Stamp brand logo on each slide</span>
+            </label>
+            <p className="text-xs text-gray-500 mt-0.5 ml-6">
+              Adds your primary logo to the bottom-right of every slide
+            </p>
           </div>
         )}
 

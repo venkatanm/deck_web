@@ -46,6 +46,15 @@ import {
   alignMiddle,
 } from "../utils/alignment";
 import { ChartToolbar } from "./charts/ChartToolbar";
+import TableToolbar from "./TableToolbar";
+import GraphicToolbar from "./GraphicToolbar";
+import StatBlockToolbar from "./StatBlockToolbar";
+import TimelineToolbar from "./TimelineToolbar";
+import CalloutToolbar from "./CalloutToolbar";
+import FrameToolbar from "./FrameToolbar";
+import FlowchartToolbar from "./FlowchartToolbar";
+import ConnectorToolbar from "./ConnectorToolbar";
+import TextToolbar from "./TextToolbar";
 
 const FONT_OPTIONS = [
   { value: "Inter", label: "Inter" },
@@ -89,6 +98,7 @@ const ToolBtn = ({ onClick, active, disabled, title, children }) => (
 const ColorPickerBtn = ({ color, onChange, title }) => {
   const [open, setOpen] = useState(false);
   const [localColor, setLocalColor] = useState(color || "#000000");
+  const brandColors = useEditorStore((s) => s.brandKit?.colors) || [];
 
   useEffect(() => {
     setLocalColor(color || "#000000");
@@ -115,7 +125,26 @@ const ColorPickerBtn = ({ color, onChange, title }) => {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden="true" />
-          <div className="absolute top-10 left-0 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-3">
+          <div className="absolute top-10 left-0 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-3 min-w-[200px]">
+            {brandColors.length > 0 && (
+              <div className="mb-2">
+                <p className="text-[9px] text-purple-600 font-bold uppercase tracking-wide mb-1.5 px-0.5">
+                  Brand Colors
+                </p>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {brandColors.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      title={c.name}
+                      onClick={() => handleChange(c.hex)}
+                      className="w-6 h-6 rounded-md border-2 border-transparent hover:border-gray-400 transition-all hover:scale-110"
+                      style={{ background: c.hex }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
             <HexColorPicker color={localColor} onChange={handleChange} />
             <input
               type="text"
@@ -373,100 +402,6 @@ function DefaultToolbar() {
       </ToolBtn>
       <div className="ml-auto text-xs text-gray-500">
         Page {currentPageIndex} of {pages.length}
-      </div>
-    </div>
-  );
-}
-
-function TextToolbar({ el, update }) {
-  const toggleBold = () => {
-    const fs = el.fontStyle || "normal";
-    const hasBold = fs.includes("bold");
-    const hasItalic = fs.includes("italic");
-    if (hasBold) update({ fontStyle: hasItalic ? "italic" : "normal" });
-    else update({ fontStyle: hasItalic ? "bold italic" : "bold" });
-  };
-  const toggleItalic = () => {
-    const fs = el.fontStyle || "normal";
-    const hasBold = fs.includes("bold");
-    const hasItalic = fs.includes("italic");
-    if (hasItalic) update({ fontStyle: hasBold ? "bold" : "normal" });
-    else update({ fontStyle: hasBold ? "bold italic" : "italic" });
-  };
-  const toggleUnderline = () => {
-    update({ textDecoration: el.textDecoration === "underline" ? "" : "underline" });
-  };
-
-  return (
-    <div className="h-12 px-4 flex items-center gap-2 border-b border-gray-200 bg-white">
-      <SelectInput
-        value={el.fontFamily || "Inter"}
-        onChange={(v) => update({ fontFamily: v })}
-        width="w-36"
-        options={FONT_OPTIONS}
-      />
-      <NumberInput
-        value={el.fontSize || 24}
-        onChange={(v) => update({ fontSize: v })}
-        min={6}
-        max={400}
-        step={1}
-        width="w-14"
-      />
-      <Divider />
-      <ToolBtn onClick={toggleBold} active={(el.fontStyle || "").includes("bold")} title="Bold">
-        <Bold className="w-4 h-4" />
-      </ToolBtn>
-      <ToolBtn onClick={toggleItalic} active={(el.fontStyle || "").includes("italic")} title="Italic">
-        <Italic className="w-4 h-4" />
-      </ToolBtn>
-      <ToolBtn onClick={toggleUnderline} active={el.textDecoration === "underline"} title="Underline">
-        <Underline className="w-4 h-4" />
-      </ToolBtn>
-      <Divider />
-      <ToolBtn onClick={() => update({ align: "left" })} active={el.align === "left"} title="Align left">
-        <AlignLeft className="w-4 h-4" />
-      </ToolBtn>
-      <ToolBtn onClick={() => update({ align: "center" })} active={el.align === "center"} title="Align center">
-        <AlignCenter className="w-4 h-4" />
-      </ToolBtn>
-      <ToolBtn onClick={() => update({ align: "right" })} active={el.align === "right"} title="Align right">
-        <AlignRight className="w-4 h-4" />
-      </ToolBtn>
-      <Divider />
-      <div className="flex flex-col items-center">
-        <ColorPickerBtn
-          color={el.fill || "#1e293b"}
-          onChange={(c) => update({ fill: c })}
-          title="Text color"
-        />
-        <span className="text-[10px] text-gray-500">Color</span>
-      </div>
-      <Divider />
-      <NumberInput
-        label="Line"
-        value={el.lineHeight ?? 1.2}
-        onChange={(v) => update({ lineHeight: v })}
-        min={0.5}
-        max={5}
-        step={0.1}
-        width="w-14"
-      />
-      <NumberInput
-        label="Letter"
-        value={el.letterSpacing ?? 0}
-        onChange={(v) => update({ letterSpacing: v })}
-        min={-20}
-        max={100}
-        step={1}
-        width="w-14"
-      />
-      <Divider />
-      <AlignmentGroup el={el} />
-      <Divider />
-      <OpacityControl value={el.opacity} onChange={(v) => update({ opacity: v })} />
-      <div className="ml-auto">
-        <PositionPopover el={el} />
       </div>
     </div>
   );
@@ -852,8 +787,16 @@ export default function Toolbar() {
   if (selectedIds.length > 1) return <MultiSelectToolbar />;
   if (!selectedElement) return <DefaultToolbar />;
   if (selectedElement.type === "chart") return <ChartToolbar el={selectedElement} />;
+  if (selectedElement.type === "table") return <TableToolbar el={selectedElement} />;
+  if (selectedElement.type === "graphic") return <GraphicToolbar el={selectedElement} />;
+  if (selectedElement.type === "statBlock") return <StatBlockToolbar el={selectedElement} />;
+  if (selectedElement.type === "timeline") return <TimelineToolbar el={selectedElement} />;
+  if (selectedElement.type === "callout") return <CalloutToolbar el={selectedElement} />;
+  if (selectedElement.type === "frame") return <FrameToolbar el={selectedElement} />;
+  if (selectedElement.type === "flowchart") return <FlowchartToolbar el={selectedElement} />;
+  if (selectedElement.type === "connector") return <ConnectorToolbar el={selectedElement} />;
   if (selectedElement.type === "drawing") return <DrawingToolbar el={selectedElement} update={update} />;
-  if (selectedElement.type === "text") return <TextToolbar el={selectedElement} update={update} />;
+  if (selectedElement.type === "text") return <TextToolbar el={selectedElement} />;
   if (selectedElement.type === "image") return <ImageToolbar el={selectedElement} update={update} />;
   if (selectedElement.type === "group") return <GroupToolbar el={selectedElement} update={update} />;
   return <ShapeToolbar el={selectedElement} update={update} />;

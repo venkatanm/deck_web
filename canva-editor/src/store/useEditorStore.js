@@ -2,13 +2,41 @@ import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_CANVAS_SIZE } from '../utils/defaults';
 import { getAllImages } from '../utils/imageStorage';
+import { debounce } from '../utils/debounce';
 
 const MAX_HISTORY = 50;
 
+// Clone pages for undo - strip image src to avoid cloning megabytes
+function clonePagesForHistory(pages) {
+  return pages.map((p) => ({
+    ...p,
+    elements: p.elements.map((el) => {
+      if (el.type === 'image' && el.src) {
+        return { ...el, src: null };
+      }
+      return { ...el };
+    }),
+  }));
+}
+
 const clonePages = (pages) => JSON.parse(JSON.stringify(pages));
 
-let snapshotTimer = null;
-let pendingSnapshot = null;
+const debouncedSaveBrandKit = debounce((kit) => {
+  try {
+    localStorage.setItem('brand_kit', JSON.stringify(kit));
+  } catch (e) {
+    try {
+      const kitToSave = {
+        ...kit,
+        logos: (kit.logos || []).map((l) => ({ ...l, src: undefined })),
+        brandIcons: (kit.brandIcons || []).map((i) => ({ ...i, src: undefined })),
+      };
+      localStorage.setItem('brand_kit', JSON.stringify(kitToSave));
+    } catch (e2) {
+      console.warn('Brand kit too large for localStorage', e2);
+    }
+  }
+}, 2000);
 
 const useEditorStore = create((set, get) => ({
   pages: [{ id: 'page-1', elements: [] }],
@@ -33,8 +61,43 @@ const useEditorStore = create((set, get) => ({
   shareId: uuidv4(),
   history: [],
   future: [],
+
+  // Pipeline stream state
+  pipelineStream: {
+    status: 'idle',
+    slideCount: 0,
+    totalSlides: 0,
+    title: '',
+    error: null,
+  },
+  setPipelineStream: (updates) =>
+    set((s) => ({
+      pipelineStream: { ...s.pipelineStream, ...updates },
+    })),
+  resetPipelineStream: () =>
+    set({
+      pipelineStream: {
+        status: 'idle',
+        slideCount: 0,
+        totalSlides: 0,
+        title: '',
+        error: null,
+      },
+    }),
+
   clipboardStyle: null,
   clipboardElement: null,
+  connectionFromId: null,
+  _isTextEditing: false,
+  pageThumbnails: {},
+
+  setConnectionFrom: (id) => set({ connectionFromId: id }),
+  setTextEditing: (val) => set({ _isTextEditing: val }),
+  setPageThumbnail: (pageId, dataUrl) =>
+    set((s) => ({
+      pageThumbnails: { ...s.pageThumbnails, [pageId]: dataUrl },
+    })),
+  clearConnectionFrom: () => set({ connectionFromId: null }),
 
   // ── Selectors ──────────────────────────────
   getCurrentElements: () => {
@@ -50,25 +113,17 @@ const useEditorStore = create((set, get) => ({
 
   // ── History helpers ────────────────────────
   _snapshot: (force = false) => {
-    const { pages } = get();
-    pendingSnapshot = clonePages(pages);
-    if (force) {
-      const { history } = get();
-      const newHistory = [...history, pendingSnapshot];
-      if (newHistory.length > MAX_HISTORY) newHistory.shift();
-      set({ history: newHistory, future: [] });
-      pendingSnapshot = null;
-      return;
-    }
-    clearTimeout(snapshotTimer);
-    snapshotTimer = setTimeout(() => {
-      if (!pendingSnapshot) return;
-      const { history } = get();
-      const newHistory = [...history, pendingSnapshot];
-      if (newHistory.length > MAX_HISTORY) newHistory.shift();
-      set({ history: newHistory, future: [] });
-      pendingSnapshot = null;
-    }, 300);
+    const { _isTextEditing, pages, history } = get();
+    if (_isTextEditing && !force) return;
+    const snapshot = clonePagesForHistory(pages);
+    const newHistory = [...history.slice(-(MAX_HISTORY - 1)), snapshot];
+    set({ history: newHistory, future: [] });
+  },
+  commitTextSnapshot: () => {
+    const { pages, history } = get();
+    const snapshot = clonePagesForHistory(pages);
+    const newHistory = [...history.slice(-(MAX_HISTORY - 1)), snapshot];
+    set({ _isTextEditing: false, history: newHistory, future: [] });
   },
 
   // ── Selection ──────────────────────────────
@@ -360,7 +415,7 @@ const useEditorStore = create((set, get) => ({
     set({
       pages: prev,
       history: history.slice(0, -1),
-      future: [clonePages(pages), ...future],
+      future: [clonePagesForHistory(pages), ...future],
       selectedId: null,
       selectedIds: [],
     });
@@ -372,7 +427,7 @@ const useEditorStore = create((set, get) => ({
     const next = future[0];
     set({
       pages: next,
-      history: [...history, clonePages(pages)],
+      history: [...history, clonePagesForHistory(pages)],
       future: future.slice(1),
       selectedId: null,
       selectedIds: [],
@@ -420,10 +475,14 @@ const useEditorStore = create((set, get) => ({
   },
 
   // ── Pages ──────────────────────────────────
-  addPage: () => {
+  addPage: (page) => {
     const { pages } = get();
-    const newPage = { id: uuidv4(), elements: [] };
-    set({ pages: [...pages, newPage], currentPageId: newPage.id, selectedId: null, selectedIds: [] });
+    if (page) {
+      set({ pages: [...pages, page] });
+    } else {
+      const newPage = { id: uuidv4(), elements: [] };
+      set({ pages: [...pages, newPage], currentPageId: newPage.id, selectedId: null, selectedIds: [] });
+    }
   },
 
   deletePage: (id) => {
@@ -438,8 +497,90 @@ const useEditorStore = create((set, get) => ({
   },
 
   setCurrentPage: (id) => set({ currentPageId: id, selectedId: null, selectedIds: [] }),
+  setCurrentPageId: (id) => set({ currentPageId: id, selectedId: null, selectedIds: [] }),
+  setPages: (pages) => set({ pages }),
+  updatePage: (pageId, updates) => {
+    const { pages } = get();
+    set({
+      pages: pages.map(p => (p.id === pageId ? { ...p, ...updates } : p)),
+    });
+  },
 
   setTitle: (title) => set({ title }),
+
+  // ── Brand Kit ─────────────────────────────────
+  brandKit: {
+    name: 'My Brand',
+    colors: [],
+    fonts: [],
+    logos: [],
+    brandIcons: [],
+    corporateTemplate: null,
+  },
+
+  setBrandKit: (updates) => {
+    const newKit = { ...get().brandKit, ...updates };
+    set({ brandKit: newKit });
+    debouncedSaveBrandKit(newKit);
+  },
+
+  loadBrandKit: () => {
+    try {
+      const saved = localStorage.getItem('brand_kit');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        set({ brandKit: parsed });
+        // Re-register brand fonts (url may be data URL or ArrayBuffer)
+        (parsed.fonts || []).forEach((f) => {
+          if (f.url) {
+            const source =
+              typeof f.url === "string" && f.url.startsWith("data:")
+                ? `url(${f.url})`
+                : f.url;
+            const face = new FontFace(f.family, source);
+            face.load().then((lf) => document.fonts.add(lf)).catch(() => {});
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Failed to load brand kit', e);
+    }
+  },
+
+  addBrandColor: (color) => {
+    const kit = get().brandKit;
+    get().setBrandKit({
+      colors: [...(kit.colors || []), { id: uuidv4(), ...color }],
+    });
+  },
+
+  removeBrandColor: (id) => {
+    const kit = get().brandKit;
+    get().setBrandKit({
+      colors: (kit.colors || []).filter((c) => c.id !== id),
+    });
+  },
+
+  addBrandFont: (font) => {
+    const kit = get().brandKit;
+    get().setBrandKit({
+      fonts: [...(kit.fonts || []), { id: uuidv4(), ...font }],
+    });
+  },
+
+  addBrandLogo: (logo) => {
+    const kit = get().brandKit;
+    get().setBrandKit({
+      logos: [...(kit.logos || []), { id: uuidv4(), ...logo }],
+    });
+  },
+
+  addBrandIcon: (icon) => {
+    const kit = get().brandKit;
+    get().setBrandKit({
+      brandIcons: [...(kit.brandIcons || []), { id: uuidv4(), ...icon }],
+    });
+  },
 
   duplicatePage: (id) => {
     const { pages } = get();

@@ -13,104 +13,249 @@ import {
   GRADIENT_PRESETS,
   BACKGROUND_COLORS,
   CHART_DEFAULTS,
+  STAT_BLOCK_DEFAULTS,
+  TIMELINE_DEFAULTS,
+  CALLOUT_DEFAULTS,
+  FRAME_DEFAULTS,
+  FLOWCHART_DEFAULTS,
 } from "../utils/defaults";
 import { STARTER_TEMPLATES } from "../utils/starterTemplates";
-import { renderChart } from "./charts/ChartElement";
+import { CHART_ICON_MAP, GroupedBarIcon } from "./charts/ChartIcons";
+import { PRESENTATION_TEMPLATES } from "../data/presentationTemplates";
+import { FONT_COMBINATIONS } from "../data/fontCombinations";
+import { LayoutTemplate } from "lucide-react";
 
 export function TemplatesPanel() {
   const [search, setSearch] = useState("");
-  const canvasSize = useEditorStore((s) => s.canvasSize);
-  const setCanvasSize = useEditorStore((s) => s.setCanvasSize);
-  const toast = useToast();
+  const [activeCategory, setCategory] = useState("All");
 
-  const filtered = CANVAS_PRESETS.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const categories = ["All", "Business", "Technology", "Education", "Creative", "Marketing"];
+
+  const filtered = PRESENTATION_TEMPLATES.filter((t) => {
+    const matchCat = activeCategory === "All" || t.category === activeCategory;
+    const matchSearch =
+      !search ||
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()));
+    return matchCat && matchSearch;
+  });
 
   return (
-    <>
-      <div className="relative px-3 py-2">
-        <Search className="absolute left-6 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+    <div className="flex flex-col gap-3">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
         <input
           type="text"
-          placeholder="Search templates"
+          placeholder="Search templates..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-full text-sm"
+          className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-purple-400"
         />
       </div>
-      <div className="px-3 py-2 flex-1 overflow-y-auto scrollbar-hide">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-2 mb-2">
-          Starter Templates
-        </p>
-        <div className="flex flex-col gap-2 mb-4">
-          {STARTER_TEMPLATES.map((template) => (
-            <button
-              key={template.name}
-              type="button"
-              onClick={() => {
-                const store = useEditorStore.getState();
-                store.setCanvasSize(template.canvasSize);
-                const newElements = template.elements.map((el) => ({
-                  ...el,
-                  id: uuidv4(),
-                }));
-                const { pages, currentPageId } = store;
-                useEditorStore.setState({
-                  pages: pages.map((p) =>
-                    p.id === currentPageId ? { ...p, elements: newElements } : p
-                  ),
-                  selectedId: null,
-                  selectedIds: [],
-                });
-                toast("Template loaded!", "success");
-              }}
-              className="w-full text-left px-3 py-2.5 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-colors group"
-            >
-              <p className="text-sm font-medium text-gray-700 group-hover:text-purple-700">
-                {template.name}
-              </p>
-              <p className="text-xs text-gray-400">
-                {template.canvasSize.width} × {template.canvasSize.height}
-              </p>
-            </button>
+
+      <div className="flex gap-1.5 flex-wrap">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => setCategory(cat)}
+            className={`text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors ${
+              activeCategory === cat
+                ? "bg-purple-600 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {filtered.map((template) => (
+          <TemplateCard key={template.id} template={template} />
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-8 text-gray-400">
+          <LayoutTemplate className="w-8 h-8 mx-auto mb-2 opacity-30" />
+          <p className="text-xs">No templates found</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TemplateCard({ template }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+  const setPages = useEditorStore((s) => s.setPages);
+  const setCurrentPageId = useEditorStore((s) => s.setCurrentPageId);
+  const setCanvasSize = useEditorStore((s) => s.setCanvasSize);
+  const clearSelection = useEditorStore((s) => s.clearSelection);
+  const toast = useToast();
+
+  const applyTemplate = () => {
+    const newPages = template.slides.map((slide, i) => ({
+      id: uuidv4(),
+      name: `Slide ${i + 1}`,
+      elements: slide.elements.map((el) => ({ ...el, id: uuidv4() })),
+    }));
+
+    setPages(newPages);
+    setCurrentPageId(newPages[0].id);
+    setCanvasSize(template.canvasSize);
+    clearSelection?.();
+    toast(`"${template.name}" template loaded!`, "success");
+    setShowConfirm(false);
+  };
+
+  return (
+    <div
+      className="rounded-xl border border-gray-200 overflow-hidden hover:border-purple-400 transition-all group cursor-pointer"
+      onClick={() => setShowConfirm(true)}
+      onKeyDown={(e) => e.key === "Enter" && setShowConfirm(true)}
+      role="button"
+      tabIndex={0}
+    >
+      <div
+        className="w-full h-32 relative overflow-hidden"
+        style={{ background: template.thumbnail.bg }}
+      >
+        <div
+          className="absolute inset-0 scale-[0.22] origin-top-left"
+          style={{
+            width: template.canvasSize.width,
+            height: template.canvasSize.height,
+          }}
+        >
+          {template.slides[0].elements.slice(0, 12).map((el, i) => (
+            <MiniElement key={el.id || i} el={el} />
           ))}
         </div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-2 mb-2">
-          Canvas Presets
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {filtered.map((preset) => {
-            const isActive =
-              canvasSize.width === preset.width &&
-              canvasSize.height === preset.height;
-            return (
-              <button
-                key={preset.name}
-                type="button"
-                onClick={() => setCanvasSize({ width: preset.width, height: preset.height })}
-                className={`rounded-lg border-2 transition-colors p-2 ${
-                  isActive
-                    ? "border-purple-500 bg-purple-50"
-                    : "border-gray-200 hover:border-gray-300 bg-white"
-                }`}
-              >
-                <div
-                  className="w-full rounded-md bg-white border border-gray-100"
-                  style={{
-                    aspectRatio: `${preset.width}/${preset.height}`,
-                  }}
-                />
-                <span className="text-xs font-medium text-gray-700 mt-1 block truncate">
-                  {preset.name}
-                </span>
-              </button>
-            );
-          })}
+        <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full">
+          {template.slides.length} slides
+        </div>
+        <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/10 transition-colors flex items-center justify-center">
+          <div className="opacity-0 group-hover:opacity-100 bg-purple-600 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg transition-all transform scale-95 group-hover:scale-100">
+            Use Template
+          </div>
         </div>
       </div>
-    </>
+
+      <div className="px-3 py-2 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-gray-800">{template.name}</p>
+          <p className="text-[11px] text-gray-400">{template.category}</p>
+        </div>
+        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+          {template.slides.length} slides
+        </span>
+      </div>
+
+      {showConfirm && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowConfirm(false);
+          }}
+          onKeyDown={(e) => e.key === "Escape" && setShowConfirm(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="bg-white rounded-2xl p-6 shadow-2xl w-80"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-bold text-gray-900 mb-2">Apply Template?</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              This will replace all your current slides with &quot;{template.name}&quot;. Your
+              work will be lost unless saved.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={applyTemplate}
+                className="flex-1 py-2 text-sm bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
+}
+
+function MiniElement({ el }) {
+  const style = {
+    position: "absolute",
+    left: el.x,
+    top: el.y,
+    width: el.width,
+    height: el.height,
+    background: el.fill || "transparent",
+    opacity: el.opacity ?? 1,
+    borderRadius: el.cornerRadius || 0,
+    transform: `rotate(${el.rotation || 0}deg)`,
+    transformOrigin: "top left",
+    overflow: "hidden",
+  };
+
+  if (el.type === "text") {
+    return (
+      <div
+        style={{
+          ...style,
+          background: "transparent",
+          color: el.fill,
+          fontSize: el.fontSize,
+          fontWeight: (el.fontStyle || "").includes("bold") ? "bold" : "normal",
+          fontFamily: el.fontFamily || "Inter",
+          textAlign: el.align || "left",
+          whiteSpace: "pre-wrap",
+          lineHeight: 1.3,
+        }}
+      >
+        {el.text}
+      </div>
+    );
+  }
+
+  if (el.type === "line") {
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: el.x,
+          top: el.y,
+          width: el.width,
+          height: el.strokeWidth || 2,
+          background: el.stroke || "#000",
+          opacity: el.opacity ?? 1,
+        }}
+      />
+    );
+  }
+
+  if (el.fillLinearGradientColorStops) {
+    const stops = el.fillLinearGradientColorStops;
+    const c1 = stops[1] || "#7c3aed";
+    const c2 = stops[3] || "#a78bfa";
+    return (
+      <div style={{ ...style, background: `linear-gradient(135deg, ${c1}, ${c2})` }} />
+    );
+  }
+
+  return <div style={style} />;
 }
 
 const SHAPE_SVGS = {
@@ -178,6 +323,126 @@ export function ElementsPanel() {
         />
       </div>
       <div className="px-3 py-2 flex-1 overflow-y-auto scrollbar-hide">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+          Infographic Stats
+        </p>
+        <div className="flex flex-col gap-2 mb-6">
+          {[
+            { subtype: "kpi", label: "KPI Card", width: 220, height: 130 },
+            { subtype: "comparison", label: "Comparison", width: 340, height: 120 },
+            { subtype: "progressStat", label: "Progress Bar", width: 280, height: 100 },
+            { subtype: "rankedList", label: "Ranked List", width: 300, height: 200 },
+            { subtype: "iconStat", label: "Icon + Stat", width: 180, height: 160 },
+          ].map((preset) => (
+            <button
+              key={preset.subtype}
+              type="button"
+              onClick={() => {
+                const defaults = STAT_BLOCK_DEFAULTS[preset.subtype];
+                if (defaults) addElement({ ...defaults });
+              }}
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left"
+            >
+              <div className="w-10 h-8 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-[10px] font-bold flex-shrink-0">
+                {preset.subtype === "kpi" && "$2.4M"}
+                {preset.subtype === "comparison" && "A vs B"}
+                {preset.subtype === "progressStat" && "72%"}
+                {preset.subtype === "rankedList" && "#1"}
+                {preset.subtype === "iconStat" && "★"}
+              </div>
+              <span className="text-xs font-medium text-gray-700">{preset.label}</span>
+            </button>
+          ))}
+        </div>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+          Flowchart
+        </p>
+        <div className="grid grid-cols-4 gap-2 mb-6">
+          {["process", "decision", "terminal", "document", "database", "parallelogram", "hexagon", "cloud"].map((subtype) => (
+            <button
+              key={subtype}
+              type="button"
+              onClick={() => {
+                const defaults = FLOWCHART_DEFAULTS[subtype];
+                if (defaults) addElement({ ...defaults });
+              }}
+              className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
+              title={subtype}
+            >
+              <div className="w-8 h-6 rounded bg-purple-300/60 border border-purple-500" />
+              <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{subtype}</span>
+            </button>
+          ))}
+        </div>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+          Frames
+        </p>
+        <div className="grid grid-cols-5 gap-2 mb-6">
+          {["circle", "roundedRect", "hexagon", "diamond", "triangle"].map((shape) => (
+            <button
+              key={shape}
+              type="button"
+              onClick={() => {
+                const defaults = FRAME_DEFAULTS[shape];
+                if (defaults) addElement({ ...defaults });
+              }}
+              className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
+              title={shape}
+            >
+              <div className="w-8 h-8 rounded-full bg-purple-300/50 border-2 border-purple-500" style={shape === "roundedRect" ? { borderRadius: 6 } : shape === "hexagon" || shape === "diamond" ? { transform: "rotate(45deg)", borderRadius: 2 } : shape === "triangle" ? { clipPath: "polygon(50% 0, 100% 100%, 0 100%)", borderRadius: 0 } : {}} />
+              <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{shape}</span>
+            </button>
+          ))}
+        </div>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+          Timelines
+        </p>
+        <div className="flex flex-col gap-2 mb-6">
+          {[
+            { subtype: "horizontal", label: "Horizontal Timeline" },
+            { subtype: "vertical", label: "Vertical Roadmap" },
+            { subtype: "steps", label: "Numbered Steps" },
+          ].map((preset) => (
+            <button
+              key={preset.subtype}
+              type="button"
+              onClick={() => {
+                const defaults = TIMELINE_DEFAULTS[preset.subtype];
+                if (defaults) addElement({ ...defaults });
+              }}
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left"
+            >
+              <div className="w-10 h-8 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-[10px] font-bold flex-shrink-0">
+                {preset.subtype === "horizontal" && "—"}
+                {preset.subtype === "vertical" && "|"}
+                {preset.subtype === "steps" && "1→2"}
+              </div>
+              <span className="text-xs font-medium text-gray-700">{preset.label}</span>
+            </button>
+          ))}
+        </div>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+          Callouts
+        </p>
+        <div className="grid grid-cols-3 gap-2 mb-6">
+          {["bottom-left", "bottom-right", "top-left", "top-right", "left", "right"].map((tailDir) => (
+            <button
+              key={tailDir}
+              type="button"
+              onClick={() => {
+                const defaults = CALLOUT_DEFAULTS[tailDir];
+                if (defaults) addElement({ ...defaults });
+              }}
+              className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
+              title={tailDir}
+            >
+              <div className="w-10 h-7 rounded bg-purple-500 flex items-center justify-center text-white text-[10px] font-bold">
+                💬
+              </div>
+              <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{tailDir.replace("-", " ")}</span>
+            </button>
+          ))}
+        </div>
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
           Shapes
         </p>
@@ -273,87 +538,176 @@ export function ElementsPanel() {
   );
 }
 
+const TEXT_PRESETS = [
+  {
+    id: "heading",
+    label: "Add a heading",
+    preview: "Heading",
+    defaults: {
+      text: "Add a heading",
+      fontSize: 48,
+      fontFamily: "Inter",
+      fontStyle: "bold",
+      fill: "#0f172a",
+      width: 600,
+      height: 64,
+      align: "left",
+      lineHeight: 1.2,
+      letterSpacing: -1,
+    },
+  },
+  {
+    id: "subheading",
+    label: "Add a subheading",
+    preview: "Subheading",
+    defaults: {
+      text: "Add a subheading",
+      fontSize: 28,
+      fontFamily: "Inter",
+      fontStyle: "normal",
+      fill: "#334155",
+      width: 500,
+      height: 40,
+      align: "left",
+      lineHeight: 1.3,
+      letterSpacing: 0,
+    },
+  },
+  {
+    id: "body",
+    label: "Add a little bit of body text",
+    preview: "Body text",
+    defaults: {
+      text: "Add a little bit of body text",
+      fontSize: 16,
+      fontFamily: "Inter",
+      fontStyle: "normal",
+      fill: "#64748b",
+      width: 480,
+      height: 24,
+      align: "left",
+      lineHeight: 1.6,
+      letterSpacing: 0,
+    },
+  },
+  {
+    id: "caption",
+    label: "Add a caption",
+    preview: "Caption",
+    defaults: {
+      text: "Caption text",
+      fontSize: 12,
+      fontFamily: "Inter",
+      fontStyle: "normal",
+      fill: "#94a3b8",
+      width: 320,
+      height: 18,
+      align: "left",
+      lineHeight: 1.4,
+      letterSpacing: 0.5,
+    },
+  },
+];
+
+function FontComboCard({ combo }) {
+  const addElement = useEditorStore((s) => s.addElement);
+  const canvasSize = useEditorStore((s) => s.canvasSize);
+
+  const handleAdd = () => {
+    const baseX = canvasSize.width / 2 - 200;
+    const baseY = canvasSize.height / 2 - 60;
+    combo.elements.forEach((el) => {
+      addElement({
+        type: "text",
+        rotation: 0,
+        opacity: 1,
+        x: baseX + (el.x || 0),
+        y: baseY + (el.y || 0),
+        ...el,
+      });
+    });
+  };
+
+  return (
+    <button
+      onClick={handleAdd}
+      className="p-3 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left overflow-hidden bg-white group min-h-[80px]"
+    >
+      <div className="pointer-events-none">
+        {combo.elements.map((el, i) => (
+          <div
+            key={i}
+            style={{
+              fontFamily: el.fontFamily,
+              fontSize: Math.min(el.fontSize * 0.28, 16),
+              fontWeight: (el.fontStyle || "").includes("bold") ? 700 : 400,
+              fontStyle: (el.fontStyle || "").includes("italic") ? "italic" : "normal",
+              color: el.fill,
+              letterSpacing: (el.letterSpacing || 0) * 0.28,
+              lineHeight: el.lineHeight || 1.3,
+              textTransform: el.textCase === "upper" ? "uppercase" : "none",
+              marginBottom: 1,
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {el.text}
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-gray-400 mt-1 group-hover:text-purple-500 truncate">
+        {combo.name}
+      </p>
+    </button>
+  );
+}
+
 export function TextPanel() {
   const addElement = useEditorStore((s) => s.addElement);
 
-  const baseText = DEFAULT_ELEMENT_PROPS.text;
-
-  const cards = [
-    {
-      label: "Add a heading",
-      add: () =>
-        addElement({
-          ...baseText,
-          fontSize: 40,
-          fontStyle: "bold",
-        }),
-    },
-    {
-      label: "Add a subheading",
-      add: () =>
-        addElement({
-          ...baseText,
-          fontSize: 28,
-          fontStyle: "normal",
-        }),
-    },
-    {
-      label: "Add a little text",
-      add: () =>
-        addElement({
-          ...baseText,
-          fontSize: 16,
-          fontStyle: "normal",
-        }),
-    },
-  ];
-
   return (
     <div className="px-3 py-2 flex-1 overflow-y-auto scrollbar-hide">
-      <div className="flex flex-col gap-2 mb-6">
-        {cards.map(({ label, add }) => (
+      <div className="flex flex-col gap-1 mb-4">
+        {TEXT_PRESETS.map((preset) => (
           <button
-            key={label}
-            type="button"
-            onClick={add}
-            className="w-full py-4 bg-white border border-gray-200 rounded-lg text-center font-medium text-gray-700 hover:border-purple-500 hover:shadow-md transition-all"
+            key={preset.id}
+            onClick={() =>
+              addElement({
+                type: "text",
+                x: 60,
+                y: 80,
+                rotation: 0,
+                opacity: 1,
+                ...preset.defaults,
+              })
+            }
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left group"
           >
-            {label}
+            <span
+              style={{
+                fontSize: preset.id === "heading" ? 18 : preset.id === "subheading" ? 15 : preset.id === "body" ? 12 : 10,
+                fontWeight: preset.id === "heading" ? 700 : 400,
+                color: "#1e293b",
+                lineHeight: 1,
+                flexShrink: 0,
+                width: 80,
+              }}
+            >
+              {preset.preview}
+            </span>
+            <span className="text-xs text-gray-500 group-hover:text-purple-600">
+              {preset.label}
+            </span>
           </button>
         ))}
       </div>
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-        Font combinations
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 mt-4">
+        Font Combinations
       </p>
-      <div className="flex flex-col gap-2">
-        {FONT_PAIRS.map(({ heading, body }) => (
-          <button
-            key={heading + body}
-            type="button"
-            onClick={() =>
-              addElement({
-                ...DEFAULT_ELEMENT_PROPS.text,
-                fontFamily: heading,
-                text: "Your heading here",
-                fontSize: 36,
-                fontStyle: "bold",
-              })
-            }
-            className="w-full p-3 bg-white border border-gray-200 rounded-lg text-left hover:border-purple-500 transition-all"
-          >
-            <div
-              className="font-bold text-gray-900 truncate"
-              style={{ fontFamily: heading, fontSize: 16 }}
-            >
-              Heading text
-            </div>
-            <div
-              className="text-gray-600 truncate mt-1"
-              style={{ fontFamily: body, fontSize: 12 }}
-            >
-              Body copy text
-            </div>
-          </button>
+      <div className="grid grid-cols-2 gap-2">
+        {FONT_COMBINATIONS.map((combo) => (
+          <FontComboCard key={combo.id} combo={combo} />
         ))}
       </div>
     </div>
@@ -367,6 +721,7 @@ export function UploadsPanel() {
   const [error, setError] = useState(null);
   const fileInputRef = useRef();
   const addElement = useEditorStore((s) => s.addElement);
+  const toast = useToast();
 
   useEffect(() => {
     getAllImages()
@@ -543,6 +898,141 @@ export function UploadsPanel() {
           </div>
         ))}
       </div>
+
+      <StockPhotosSection
+        addElement={addElement}
+        compressImage={compressImage}
+        saveImage={saveImage}
+        toast={toast}
+      />
+    </div>
+  );
+}
+
+function StockPhotosSection({ addElement, compressImage, saveImage, toast }) {
+  const [query, setQuery] = useState("");
+  const [submitted, setSubmitted] = useState("");
+  const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const SUGGESTIONS = [
+    "business",
+    "team",
+    "technology",
+    "nature",
+    "office",
+    "abstract",
+    "city",
+    "minimal",
+  ];
+
+  const hashStr = (str) =>
+    str.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) & 0xffff, 7);
+
+  const search = async (q) => {
+    const term = q || query;
+    if (!term) return;
+    setSubmitted(term);
+    setLoading(true);
+    const seed = hashStr(term);
+    const urls = Array.from({ length: 9 }, (_, i) => ({
+      id: `${term}-${i}`,
+      thumb: `https://picsum.photos/seed/${seed + i}/300/200`,
+      full: `https://picsum.photos/seed/${seed + i}/1600/900`,
+    }));
+    setPhotos(urls);
+    setLoading(false);
+  };
+
+  const addPhoto = async (url) => {
+    try {
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      const file = new File([blob], "stock.jpg", { type: blob.type || "image/jpeg" });
+      const { src } = await compressImage(file);
+      const id = uuidv4();
+      await saveImage(id, src, "stock-photo.jpg", file.type);
+      addElement({
+        type: "image",
+        src,
+        imageId: id,
+        x: 80,
+        y: 80,
+        width: 400,
+        height: 250,
+        rotation: 0,
+        opacity: 1,
+      });
+      toast("Photo added to canvas!", "success");
+    } catch (e) {
+      toast("Could not load photo — check network.", "error");
+    }
+  };
+
+  return (
+    <div className="mt-4">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        Stock Photos
+      </p>
+      <div className="flex gap-2 mb-2">
+        <input
+          type="text"
+          placeholder="Search photos..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && search()}
+          className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-purple-400"
+        />
+        <button
+          type="button"
+          onClick={() => search()}
+          className="bg-purple-600 text-white text-xs px-3 py-2 rounded-xl hover:bg-purple-700"
+        >
+          Go
+        </button>
+      </div>
+      {!submitted && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setQuery(s);
+                search(s);
+              }}
+              className="text-[11px] bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full hover:bg-purple-100 hover:text-purple-700"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+      {loading && (
+        <p className="text-xs text-gray-400 text-center py-4">Loading...</p>
+      )}
+      {!loading && photos.length > 0 && (
+        <div className="grid grid-cols-3 gap-1.5">
+          {photos.map((photo) => (
+            <button
+              key={photo.id}
+              type="button"
+              onClick={() => addPhoto(photo.full)}
+              className="relative group rounded-lg overflow-hidden aspect-video bg-gray-100"
+            >
+              <img
+                src={photo.thumb}
+                alt=""
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/30 transition-colors flex items-center justify-center">
+                <Plus className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -647,90 +1137,86 @@ export function ProjectsPanel() {
   );
 }
 
-const CHART_CATEGORIES = [
+const CHARTS_CONFIG = [
   {
-    name: "Bar Charts",
+    category: "BAR CHARTS",
     charts: [
-      { id: "bar-grouped", label: "Grouped Bar", chartType: "bar", variant: "grouped" },
-      { id: "bar-stacked", label: "Stacked Bar", chartType: "bar", variant: "stacked" },
-      { id: "bar-horizontal", label: "Horizontal Bar", chartType: "bar", variant: "horizontal" },
+      { iconId: "bar-grouped", label: "Grouped Bar", defaultKey: "bar" },
+      { iconId: "bar-stacked", label: "Stacked Bar", defaultKey: "stackedBar" },
+      { iconId: "bar-stacked100", label: "100% Stacked", defaultKey: "stackedBar100" },
+      { iconId: "bar-horizontal", label: "Horizontal Bar", defaultKey: "bar", extraProps: { variant: "horizontal" } },
     ],
   },
   {
-    name: "Line Charts",
+    category: "LINE CHARTS",
     charts: [
-      { id: "line-linear", label: "Line", chartType: "line", variant: "linear" },
-      { id: "line-smooth", label: "Smooth Line", chartType: "line", variant: "smooth" },
-      { id: "line-step", label: "Step Line", chartType: "line", variant: "step" },
+      { iconId: "line", label: "Line", defaultKey: "line" },
+      { iconId: "line-smooth", label: "Smooth Line", defaultKey: "line", extraProps: { variant: "smooth" } },
+      { iconId: "line-step", label: "Step Line", defaultKey: "line", extraProps: { variant: "step" } },
+      { iconId: "line-multi", label: "Multi-Line", defaultKey: "multiLine" },
     ],
   },
   {
-    name: "Area Charts",
+    category: "COMBO CHARTS",
     charts: [
-      { id: "area-stacked", label: "Stacked Area", chartType: "area", variant: "stacked" },
-      { id: "area-unstacked", label: "Unstacked Area", chartType: "area", variant: "unstacked" },
+      { iconId: "combo-bar-line", label: "Bar + Line", defaultKey: "composed" },
+      { iconId: "waterfall", label: "Waterfall", defaultKey: "waterfall" },
     ],
   },
   {
-    name: "Pie & Donut",
+    category: "AREA CHARTS",
     charts: [
-      { id: "pie", label: "Pie", chartType: "pie", variant: "pie" },
-      { id: "donut", label: "Donut", chartType: "pie", variant: "donut" },
+      { iconId: "area-stacked", label: "Stacked Area", defaultKey: "area", extraProps: { variant: "stacked" } },
+      { iconId: "area-unstacked", label: "Unstacked Area", defaultKey: "area", extraProps: { variant: "unstacked" } },
     ],
   },
   {
-    name: "Scatter & Bubble",
+    category: "PIE & DONUT",
     charts: [
-      { id: "scatter", label: "Scatter Plot", chartType: "scatter" },
+      { iconId: "pie", label: "Pie", defaultKey: "pie" },
+      { iconId: "donut", label: "Donut", defaultKey: "pie", extraProps: { variant: "donut" } },
     ],
   },
   {
-    name: "Radar & Radial",
+    category: "SCATTER & BUBBLE",
+    charts: [{ iconId: "scatter", label: "Scatter Plot", defaultKey: "scatter" }],
+  },
+  {
+    category: "RADAR & RADIAL",
     charts: [
-      { id: "radar", label: "Radar / Spider", chartType: "radar" },
-      { id: "radialBar", label: "Radial Bar", chartType: "radialBar" },
+      { iconId: "radar", label: "Radar", defaultKey: "radar" },
+      { iconId: "radialBar", label: "Radial Bar", defaultKey: "radialBar" },
     ],
   },
   {
-    name: "Hierarchy & Flow",
+    category: "FUNNEL & HIERARCHY",
     charts: [
-      { id: "funnel", label: "Funnel", chartType: "funnel" },
-      { id: "treemap", label: "Treemap", chartType: "treemap" },
+      { iconId: "funnel", label: "Funnel", defaultKey: "funnel" },
+      { iconId: "treemap", label: "Treemap", defaultKey: "treemap" },
     ],
   },
   {
-    name: "Progress & Infographic",
+    category: "PROGRESS",
     charts: [
-      { id: "progress-ring", label: "Progress Ring", chartType: "progress", variant: "ring" },
-      { id: "progress-bar", label: "Progress Bar", chartType: "progress", variant: "bar" },
+      { iconId: "progress-ring", label: "Progress Ring", defaultKey: "progress", extraProps: { variant: "ring" } },
+      { iconId: "progress-bar", label: "Progress Bar", defaultKey: "progress", extraProps: { variant: "bar" } },
     ],
   },
 ];
 
 function ChartPreviewCard({ chart, onAdd }) {
-  const defaults = CHART_DEFAULTS[chart.chartType];
-  if (!defaults) return null;
-
-  const previewEl = {
-    ...JSON.parse(JSON.stringify(defaults)),
-    id: "preview",
-    chartType: chart.chartType,
-    variant: chart.variant || defaults.variant,
-    width: 116,
-    height: 80,
-    showLegend: false,
-    showGrid: false,
-    title: "",
-  };
-
+  const IconComp = CHART_ICON_MAP[chart.iconId] || GroupedBarIcon;
   return (
     <button
       type="button"
       onClick={onAdd}
-      className="flex flex-col items-center gap-1.5 p-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all group"
+      className="flex flex-col items-center gap-1.5 p-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all group bg-white"
     >
-      <div className="w-full h-20 overflow-hidden rounded-lg bg-gray-50 flex items-center justify-center pointer-events-none">
-        {renderChart(previewEl)}
+      <div
+        className="w-full flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden group-hover:bg-purple-50 transition-colors"
+        style={{ height: 72 }}
+      >
+        <IconComp width={116} height={68} />
       </div>
       <span className="text-[11px] text-gray-600 group-hover:text-purple-700 font-medium text-center leading-tight">
         {chart.label}
@@ -745,17 +1231,16 @@ export function ChartsPanel() {
   const [search, setSearch] = useState("");
 
   const handleAdd = (chartDef) => {
-    const defaults = CHART_DEFAULTS[chartDef.chartType];
+    const defaults = CHART_DEFAULTS[chartDef.defaultKey];
     if (!defaults) return;
     addElement({
       ...JSON.parse(JSON.stringify(defaults)),
-      chartType: chartDef.chartType,
-      variant: chartDef.variant || defaults.variant,
+      ...(chartDef.extraProps || {}),
     });
     toast("Chart added! Click \"Edit Data\" in the toolbar to customize.", "info");
   };
 
-  const filtered = CHART_CATEGORIES.map((cat) => ({
+  const filtered = CHARTS_CONFIG.map((cat) => ({
     ...cat,
     charts: cat.charts.filter((c) =>
       !search || c.label.toLowerCase().includes(search.toLowerCase())
@@ -776,9 +1261,9 @@ export function ChartsPanel() {
       </div>
       <div className="px-3 py-2 flex-1 overflow-y-auto scrollbar-hide">
         {filtered.map((category) => (
-          <div key={category.name} className="mb-4">
+          <div key={category.category} className="mb-4">
             <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              {category.name}
+              {category.category}
             </p>
             <div className="grid grid-cols-2 gap-2">
               {category.charts.map((chart) => (

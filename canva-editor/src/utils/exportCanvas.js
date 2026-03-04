@@ -2,7 +2,15 @@ import Konva from "konva";
 import { jsPDF } from "jspdf";
 import { saveAs } from "file-saver";
 import pptxgen from "pptxgenjs";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createRoot } from "react-dom/client";
+import html2canvas from "html2canvas";
+import * as Icons from "lucide-react";
 import { CHART_COLOR_SCHEMES } from "./defaults";
+import useEditorStore from "../store/useEditorStore";
+import StatBlockElement from "../components/StatBlockElement";
+import TimelineElement from "../components/TimelineElement";
 
 const HEART_PATH = "M28 46 C28 46 8 34 8 20 C8 13 13 8 20 8 C24 8 28 12 28 12 C28 12 32 8 36 8 C43 8 48 13 48 20 C48 34 28 46 28 46Z";
 const DIAMOND_PATH = "M28,4 L52,28 L28,52 L4,28 Z";
@@ -370,16 +378,26 @@ function pxToInches(px, canvasSize, axis) {
     : (px / canvasSize.height) * slideH;
 }
 
-export async function exportPPTX(pages, canvasSize, title = "Presentation") {
+export async function exportPPTX(pages, canvasSize, title = "Presentation", exportOptions = {}) {
   const pptx = new pptxgen();
 
   const aspectRatio = canvasSize.height / canvasSize.width;
+  const slideW = 10;
+  const slideH = 10 * aspectRatio;
+
   pptx.defineLayout({
     name: "CUSTOM",
-    width: 10,
-    height: 10 * aspectRatio,
+    width: slideW,
+    height: slideH,
   });
   pptx.layout = "CUSTOM";
+
+  // Brand logo stamp (from store when stampLogo is requested)
+  let primaryLogo = null;
+  if (exportOptions?.stampLogo) {
+    const brandKit = useEditorStore.getState().brandKit;
+    primaryLogo = brandKit?.logos?.find((l) => l.type === "primary");
+  }
 
   for (const page of pages) {
     const slide = pptx.addSlide();
@@ -604,8 +622,279 @@ export async function exportPPTX(pages, canvasSize, title = "Presentation") {
           break;
         }
 
+        case "table": {
+          const cells = el.cells || [];
+          const tableData = cells.map((row) =>
+            row.map((cell) => ({
+              text: cell.text || "",
+              options: {
+                bold: cell.bold,
+                align: cell.align || "left",
+                color: (cell.color || "#1e293b").replace("#", ""),
+                fill: (cell.bg || "#ffffff").replace("#", ""),
+                fontSize: el.fontSize || 12,
+                border: { pt: 1, color: (el.borderColor || "#e2e8f0").replace("#", "") },
+              },
+            }))
+          );
+          if (tableData.length > 0) {
+            const numCols = el.cols || tableData[0]?.length || 1;
+            try {
+              slide.addTable(tableData, {
+                ...opts,
+                colW: Array(numCols).fill(w / numCols),
+                border: { pt: 1, color: (el.borderColor || "#e2e8f0").replace("#", "") },
+              });
+            } catch (e) {
+              console.error("PPTX table error", e);
+            }
+          }
+          break;
+        }
+
+        case "graphic": {
+          const IconComp = Icons[el.iconName];
+          if (IconComp) {
+            try {
+              const svgStr = renderToStaticMarkup(
+                React.createElement(IconComp, {
+                  color: el.fill || "#7c3aed",
+                  width: 200,
+                  height: 200,
+                  strokeWidth: el.strokeWidth || 1.5,
+                })
+              );
+              const svgUrl = `data:image/svg+xml;base64,${btoa(
+                unescape(encodeURIComponent(svgStr))
+              )}`;
+              slide.addImage({
+                data: svgUrl,
+                ...opts,
+                transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
+              });
+            } catch (e) {
+              console.error("PPTX graphic error", e);
+            }
+          }
+          break;
+        }
+
+        case "statBlock": {
+          const tempDiv = document.createElement("div");
+          tempDiv.style.cssText = `position:fixed;left:-9999px;top:0;width:${el.width}px;height:${el.height}px;overflow:hidden;`;
+          document.body.appendChild(tempDiv);
+          const root = createRoot(tempDiv);
+          root.render(
+            React.createElement(StatBlockElement, {
+              el: { ...el, x: 0, y: 0 },
+              zoom: 1,
+            })
+          );
+          await new Promise((r) => setTimeout(r, 150));
+          try {
+            const canvas = await html2canvas(tempDiv.firstChild || tempDiv, {
+              scale: 2,
+              backgroundColor: null,
+            });
+            const dataUrl = canvas.toDataURL("image/png");
+            slide.addImage({
+              data: dataUrl,
+              ...opts,
+              transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
+            });
+          } catch (e) {
+            console.error("StatBlock export error", e);
+          }
+          root.unmount();
+          document.body.removeChild(tempDiv);
+          break;
+        }
+
+        case "callout": {
+          slide.addShape(pptx.ShapeType.roundRect, {
+            ...opts,
+            rectRadius: 0.1,
+            fill: { color: (el.fill || "#7c3aed").replace("#", "") },
+            line: { type: "none" },
+            transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
+          });
+          if (el.text) {
+            slide.addText(el.text, {
+              ...opts,
+              h: h * 0.72,
+              align: "center",
+              valign: "middle",
+              color: (el.textColor || "#ffffff").replace("#", ""),
+              fontSize: Math.round((el.fontSize || 14) * 0.75),
+              fontFace: el.fontFamily || "Calibri",
+              wrap: true,
+              transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
+            });
+          }
+          break;
+        }
+
+        case "frame": {
+          if (el.src) {
+            slide.addImage({
+              data: el.src,
+              ...opts,
+              transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
+            });
+          } else {
+            const pptxShape =
+              el.frameShape === "circle"
+                ? pptx.ShapeType.ellipse
+                : pptx.ShapeType.roundRect;
+            slide.addShape(pptxShape, {
+              ...opts,
+              fill: { color: "F1F5F9" },
+              line: {
+                color: (el.strokeColor || "7c3aed").replace("#", ""),
+                pt: el.strokeWidth || 2,
+              },
+              ...(el.frameShape === "roundedRect" && el.cornerRadius
+                ? { rectRadius: Math.min(0.5, (el.cornerRadius / el.height) * 2) }
+                : {}),
+            });
+          }
+          break;
+        }
+
+        case "flowchart": {
+          const SHAPE_MAP = {
+            process: "rect",
+            decision: "diamond",
+            terminal: "roundRect",
+            document: "rect",
+            database: "cylinder",
+            parallelogram: "parallelogram",
+            hexagon: "hexagon",
+            cloud: "rect",
+          };
+          const pptxShape = pptx.ShapeType[SHAPE_MAP[el.subtype]] || pptx.ShapeType.rect;
+          slide.addShape(pptxShape, {
+            ...opts,
+            fill: { color: (el.fill || "#ede9fe").replace("#", "") },
+            line: {
+              color: (el.stroke || "#7c3aed").replace("#", ""),
+              pt: el.strokeWidth || 2,
+            },
+            ...(el.subtype === "terminal" ? { rectRadius: 0.5 } : {}),
+          });
+          if (el.text) {
+            slide.addText(el.text, {
+              ...opts,
+              align: "center",
+              valign: "middle",
+              color: (el.textColor || "#1e293b").replace("#", ""),
+              fontSize: Math.round((el.fontSize || 13) * 0.75),
+              fontFace: el.fontFamily || "Calibri",
+              wrap: true,
+            });
+          }
+          break;
+        }
+
+        case "connector": {
+          const pageEls = page.elements;
+          const fromEl = pageEls.find((e) => e.id === el.fromId);
+          const toEl = pageEls.find((e) => e.id === el.toId);
+          const getAnchorPoint = (elem, anchor) => {
+            const cx = elem.x + elem.width / 2;
+            const cy = elem.y + elem.height / 2;
+            switch (anchor) {
+              case "top": return { x: cx, y: elem.y };
+              case "bottom": return { x: cx, y: elem.y + elem.height };
+              case "left": return { x: elem.x, y: cy };
+              case "right": return { x: elem.x + elem.width, y: cy };
+              default: return { x: cx, y: cy };
+            }
+          };
+          if (fromEl && toEl) {
+            const from = getAnchorPoint(fromEl, el.fromAnchor || "bottom");
+            const to = getAnchorPoint(toEl, el.toAnchor || "top");
+            const fx = pxToInches(from.x, canvasSize, "x");
+            const fy = pxToInches(from.y, canvasSize, "y");
+            const tx = pxToInches(to.x, canvasSize, "x");
+            const ty = pxToInches(to.y, canvasSize, "y");
+            slide.addShape(pptx.ShapeType.line, {
+              x: fx,
+              y: fy,
+              w: tx - fx,
+              h: ty - fy,
+              line: {
+                color: (el.stroke || "#7c3aed").replace("#", ""),
+                pt: el.strokeWidth || 2,
+                endArrowType: el.arrowEnd !== false ? "arrow" : "none",
+                beginArrowType: el.arrowStart === true ? "arrow" : "none",
+              },
+            });
+            if (el.label) {
+              slide.addText(el.label, {
+                x: (fx + tx) / 2 - 0.4,
+                y: (fy + ty) / 2 - 0.1,
+                w: 0.8,
+                h: 0.2,
+                align: "center",
+                color: (el.stroke || "#7c3aed").replace("#", ""),
+                fontSize: 9,
+              });
+            }
+          }
+          break;
+        }
+
+        case "timeline": {
+          const tempDiv = document.createElement("div");
+          tempDiv.style.cssText = `position:fixed;left:-9999px;top:0;width:${el.width}px;height:${el.height}px;overflow:hidden;`;
+          document.body.appendChild(tempDiv);
+          const root = createRoot(tempDiv);
+          root.render(
+            React.createElement(TimelineElement, {
+              el: { ...el, x: 0, y: 0 },
+              zoom: 1,
+            })
+          );
+          await new Promise((r) => setTimeout(r, 150));
+          try {
+            const canvas = await html2canvas(tempDiv.firstChild || tempDiv, {
+              scale: 2,
+              backgroundColor: null,
+            });
+            const dataUrl = canvas.toDataURL("image/png");
+            slide.addImage({
+              data: dataUrl,
+              ...opts,
+              transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
+            });
+          } catch (e) {
+            console.error("Timeline export error", e);
+          }
+          root.unmount();
+          document.body.removeChild(tempDiv);
+          break;
+        }
+
         default:
           break;
+      }
+    }
+
+    // Brand logo stamp (bottom-right of each slide)
+    if (primaryLogo?.src) {
+      try {
+        const logoW = 1.2;
+        const logoH = 0.4;
+        slide.addImage({
+          data: primaryLogo.src,
+          x: slideW - logoW - 0.15,
+          y: slideH - logoH - 0.15,
+          w: logoW,
+          h: logoH,
+        });
+      } catch (e) {
+        console.warn("Could not add brand logo to slide", e);
       }
     }
   }

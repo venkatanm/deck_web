@@ -39,6 +39,16 @@ export async function getAllImages() {
   });
 }
 
+export async function getImage(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const req = tx.objectStore(STORE_NAME).get(id);
+    req.onsuccess = (e) => resolve(e.target.result?.src ?? null);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
 export async function deleteImage(id) {
   const db = await openDB();
   return new Promise((resolve, reject) => {

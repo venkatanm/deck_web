@@ -1,20 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import {
   LayoutTemplate,
   Shapes,
   BarChart2,
+  Table2,
+  Smile,
   Type,
+  Image,
   Pencil,
-  Upload,
   FolderOpen,
   Palette,
+  PaintBucket,
   Layers,
+  Sparkles,
 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
 import {
-  TemplatesPanel,
   ElementsPanel,
-  ChartsPanel,
   TextPanel,
   UploadsPanel,
   ProjectsPanel,
@@ -22,25 +24,56 @@ import {
 } from "./SidebarPanels";
 import { LayersPanel } from "./LayersPanel";
 
+const ChartsPanel = lazy(() => import("./SidebarPanels").then((m) => ({ default: m.ChartsPanel })));
+const TablesPanel = lazy(() => import("./TablesPanel"));
+const GraphicsPanel = lazy(() => import("./GraphicsPanel"));
+const BrandKitPanel = lazy(() => import("./BrandKitPanel"));
+const TemplatesLayoutsStylesPanel = lazy(() => import("./TemplatesLayoutsStylesPanel"));
+const AIRefinementPanel = lazy(() => import("./AIRefinementPanel"));
+
+function PanelSuspense({ children }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col gap-2 p-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
+
 const TABS = [
   { id: "templates", icon: LayoutTemplate, label: "Templates" },
   { id: "elements", icon: Shapes, label: "Elements" },
   { id: "charts", icon: BarChart2, label: "Charts" },
+  { id: "tables", icon: Table2, label: "Tables" },
+  { id: "graphics", icon: Smile, label: "Graphics" },
   { id: "text", icon: Type, label: "Text" },
   { id: "draw", icon: Pencil, label: "Draw", isDrawMode: true },
-  { id: "uploads", icon: Upload, label: "Uploads" },
+  { id: "uploads", icon: Image, label: "Uploads" },
+  { id: "ai", icon: Sparkles, label: "AI" },
   { id: "projects", icon: FolderOpen, label: "Projects" },
+  { id: "brand", icon: PaintBucket, label: "Brand" },
   { id: "background", icon: Palette, label: "Background" },
   { id: "layers", icon: Layers, label: "Layers" },
 ];
 
 const PANELS = {
-  templates: TemplatesPanel,
+  templates: TemplatesLayoutsStylesPanel,
   elements: ElementsPanel,
   charts: ChartsPanel,
+  tables: TablesPanel,
+  graphics: GraphicsPanel,
   text: TextPanel,
   uploads: UploadsPanel,
+  ai: AIRefinementPanel,
   projects: ProjectsPanel,
+  brand: BrandKitPanel,
   background: BackgroundPanel,
   layers: LayersPanel,
 };
@@ -120,7 +153,9 @@ export function Sidebar() {
                 {tab.label}
               </div>
               <div className="flex-1 overflow-y-auto scrollbar-hide px-3 py-2">
-                <PanelComponent />
+                <PanelSuspense>
+                  <PanelComponent />
+                </PanelSuspense>
               </div>
             </div>
           );

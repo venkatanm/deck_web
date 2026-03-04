@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
+  ComposedChart,
   PieChart, Pie, Cell, ScatterChart, Scatter,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   RadialBarChart, RadialBar, Treemap, FunnelChart, Funnel,
@@ -87,23 +88,35 @@ export function renderChart(el) {
     case 'bar': {
       const isHorizontal = el.variant === 'horizontal';
       const isStacked = el.variant === 'stacked';
+      const isStacked100 = el.variant === 'stacked100';
+      let barData = data;
+      if (isStacked100 && series.length > 0) {
+        barData = data.map((row) => {
+          const total = series.reduce((sum, s) => sum + (row[s.key] || 0), 0);
+          const normalized = { label: row.label };
+          series.forEach((s) => {
+            normalized[s.key] = total > 0 ? ((row[s.key] || 0) / total) * 100 : 0;
+          });
+          return normalized;
+        });
+      }
       return (
         <BarChart
           {...commonProps}
           layout={isHorizontal ? 'vertical' : 'horizontal'}
-          data={data}
+          data={barData}
         >
           {gridProps}
           {isHorizontal
             ? <><XAxis type="number" tick={{ fontSize: 10 }} /><YAxis dataKey="label" type="category" tick={{ fontSize: 10 }} width={70} /></>
-            : <><XAxis dataKey="label" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /></>
+            : <><XAxis dataKey="label" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} domain={isStacked100 ? [0, 100] : undefined} /></>
           }
           {tooltipEl}{legendEl}
           {series.map((s, i) => (
             <Bar key={s.key} dataKey={s.key} name={s.name}
-              stackId={isStacked ? 'stack' : undefined}
+              stackId={isStacked || isStacked100 ? 'stack' : undefined}
               fill={s.color || colors[i % colors.length]}
-              radius={isStacked ? 0 : [4, 4, 0, 0]}
+              radius={isStacked || isStacked100 ? 0 : [4, 4, 0, 0]}
             />
           ))}
         </BarChart>
@@ -161,6 +174,69 @@ export function renderChart(el) {
             />
           ))}
         </AreaChart>
+      );
+    }
+
+    case 'composed': {
+      const sers = series.length ? series : [
+        { key: 'bars', name: 'Bars', color: colors[0], renderAs: 'bar' },
+        { key: 'line', name: 'Line', color: colors[1], renderAs: 'line' },
+      ];
+      return (
+        <ComposedChart {...commonProps} data={data}>
+          {gridProps}
+          <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+          <YAxis tick={{ fontSize: 10 }} />
+          {tooltipEl}{legendEl}
+          {sers.map((s, i) =>
+            s.renderAs === 'line' ? (
+              <Line
+                key={s.key}
+                type="monotone"
+                dataKey={s.key}
+                name={s.name}
+                stroke={s.color || colors[i]}
+                strokeWidth={2.5}
+                dot={{ r: 4 }}
+              />
+            ) : (
+              <Bar
+                key={s.key}
+                dataKey={s.key}
+                name={s.name}
+                fill={s.color || colors[i]}
+                radius={[4, 4, 0, 0]}
+              />
+            )
+          )}
+        </ComposedChart>
+      );
+    }
+
+    case 'waterfall': {
+      const wfData = (data || []).map((d) => ({
+        ...d,
+        displayValue: d.type === 'total' ? d.value : d.value,
+        fill: d.type === 'total' ? colors[0] : d.value >= 0 ? colors[1] : colors[2] || '#ef4444',
+      }));
+      return (
+        <BarChart {...commonProps} data={wfData}>
+          {gridProps}
+          <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+          <YAxis tick={{ fontSize: 10 }} allowDataOverflow />
+          {tooltipEl}
+          <Bar
+            dataKey="displayValue"
+            nameKey="label"
+            fill="#7c3aed"
+            radius={[4, 4, 0, 0]}
+            shape={(props) => {
+              const { x, y, width, height, payload } = props;
+              const fill = payload.fill || colors[0];
+              return <rect x={x} y={y} width={width} height={height} fill={fill} />;
+            }}
+          />
+        </BarChart>
       );
     }
 
@@ -303,7 +379,7 @@ export function renderChart(el) {
   }
 }
 
-export default function ChartElement({ el, stagePos, zoom }) {
+const ChartElement = React.memo(function ChartElement({ el, zoom }) {
   const setSelectedIds = useEditorStore(s => s.setSelectedIds);
   const toggleSelectedId = useEditorStore(s => s.toggleSelectedId);
   const isSelected = useEditorStore(s => s.selectedId === el.id ||
@@ -320,8 +396,8 @@ export default function ChartElement({ el, stagePos, zoom }) {
 
   const style = {
     position: 'absolute',
-    left: el.x * zoom + stagePos.x,
-    top: el.y * zoom + stagePos.y,
+    left: el.x * zoom,
+    top: el.y * zoom,
     width: el.width * zoom,
     height: el.height * zoom,
     transform: `rotate(${el.rotation || 0}deg)`,
@@ -356,4 +432,6 @@ export default function ChartElement({ el, stagePos, zoom }) {
       </div>
     </div>
   );
-}
+}, (prev, next) => prev.el === next.el && prev.zoom === next.zoom);
+
+export default ChartElement;
