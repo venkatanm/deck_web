@@ -1,0 +1,614 @@
+import Konva from "konva";
+import { jsPDF } from "jspdf";
+import { saveAs } from "file-saver";
+import pptxgen from "pptxgenjs";
+import { CHART_COLOR_SCHEMES } from "./defaults";
+
+const HEART_PATH = "M28 46 C28 46 8 34 8 20 C8 13 13 8 20 8 C24 8 28 12 28 12 C28 12 32 8 36 8 C43 8 48 13 48 20 C48 34 28 46 28 46Z";
+const DIAMOND_PATH = "M28,4 L52,28 L28,52 L4,28 Z";
+
+export async function pageToDataURL(page, canvasSize, scale = 1, mimeType = "image/png") {
+  return new Promise((resolve) => {
+    const container = document.createElement("div");
+    container.style.display = "none";
+    document.body.appendChild(container);
+
+    const stage = new Konva.Stage({
+      container,
+      width: canvasSize.width * scale,
+      height: canvasSize.height * scale,
+    });
+
+    const layer = new Konva.Layer();
+    stage.add(layer);
+
+    const bg = new Konva.Rect({
+      width: canvasSize.width * scale,
+      height: canvasSize.height * scale,
+      fill: canvasSize.backgroundColor || "#ffffff",
+    });
+    layer.add(bg);
+
+    const imageElements = page.elements.flatMap((el) =>
+      el.type === "group"
+        ? (el.children || []).filter((c) => c.type === "image")
+        : el.type === "image"
+          ? [el]
+          : []
+    );
+    const imagePromises = imageElements.map((el) =>
+      new Promise((res) => {
+        const img = new window.Image();
+        img.onload = () => res({ id: el.id, img });
+        img.onerror = () => res({ id: el.id, img: null });
+        img.src = el.src || "";
+      })
+    );
+
+    Promise.all(imagePromises).then((loadedImages) => {
+      const imageMap = Object.fromEntries(loadedImages.map((i) => [i.id, i.img]));
+
+      page.elements.forEach((el) => {
+        let node;
+        const common = {
+          x: el.x * scale,
+          y: el.y * scale,
+          rotation: el.rotation || 0,
+          opacity: el.opacity ?? 1,
+          scaleX: el.scaleX || 1,
+          scaleY: el.scaleY || 1,
+        };
+
+        switch (el.type) {
+          case "rect": {
+            const isGradient =
+              Array.isArray(el.fillLinearGradientColorStops) &&
+              el.fillLinearGradientColorStops.length > 0;
+
+            const rectProps = {
+              ...common,
+              width: el.width * scale,
+              height: el.height * scale,
+              stroke: el.stroke || "",
+              strokeWidth: (el.strokeWidth || 0) * scale,
+              cornerRadius: (el.cornerRadius || 0) * scale,
+            };
+
+            if (isGradient) {
+              const startPt = el.fillLinearGradientStartPoint || { x: 0, y: 0 };
+              const endPt = el.fillLinearGradientEndPoint || { x: el.width, y: el.height };
+
+              rectProps.fillLinearGradientStartPoint = {
+                x: startPt.x * scale,
+                y: startPt.y * scale,
+              };
+              rectProps.fillLinearGradientEndPoint = {
+                x: endPt.x * scale,
+                y: endPt.y * scale,
+              };
+              rectProps.fillLinearGradientColorStops = el.fillLinearGradientColorStops;
+            } else {
+              rectProps.fill = el.fill || "#cccccc";
+            }
+
+            node = new Konva.Rect(rectProps);
+            break;
+          }
+          case "circle":
+            node = new Konva.Ellipse({
+              ...common,
+              x: (el.x + el.width / 2) * scale,
+              y: (el.y + el.height / 2) * scale,
+              radiusX: (el.width / 2) * scale,
+              radiusY: (el.height / 2) * scale,
+              fill: el.fill,
+              stroke: el.stroke,
+              strokeWidth: (el.strokeWidth || 0) * scale,
+            });
+            break;
+          case "text":
+            node = new Konva.Text({
+              ...common,
+              width: el.width * scale,
+              text: el.text || "",
+              fontSize: (el.fontSize || 24) * scale,
+              fontFamily: el.fontFamily || "Inter",
+              fontStyle: el.fontStyle || "normal",
+              fill: el.fill || "#1e293b",
+              align: el.align || "left",
+              lineHeight: el.lineHeight || 1.2,
+              letterSpacing: el.letterSpacing || 0,
+              textDecoration: el.textDecoration || "",
+            });
+            break;
+          case "image": {
+            const img = imageMap[el.id];
+            if (img) {
+              node = new Konva.Image({
+                ...common,
+                image: img,
+                width: el.width * scale,
+                height: el.height * scale,
+              });
+            }
+            break;
+          }
+          case "triangle":
+          case "pentagon":
+            node = new Konva.RegularPolygon({
+              ...common,
+              x: (el.x + el.width / 2) * scale,
+              y: (el.y + el.height / 2) * scale,
+              sides: el.type === "triangle" ? 3 : 5,
+              radius: (el.width / 2) * scale,
+              fill: el.fill,
+              stroke: el.stroke,
+              strokeWidth: (el.strokeWidth || 0) * scale,
+            });
+            break;
+          case "star":
+            node = new Konva.Star({
+              ...common,
+              x: (el.x + el.width / 2) * scale,
+              y: (el.y + el.height / 2) * scale,
+              numPoints: 5,
+              innerRadius: el.width * 0.22 * scale,
+              outerRadius: el.width * 0.5 * scale,
+              fill: el.fill,
+              stroke: el.stroke,
+              strokeWidth: (el.strokeWidth || 0) * scale,
+            });
+            break;
+          case "heart":
+          case "diamond": {
+            const pathScaleX = (el.width / 56) * scale * (el.scaleX || 1);
+            const pathScaleY = (el.height / 56) * scale * (el.scaleY || 1);
+            const pathData = el.type === "heart" ? HEART_PATH : DIAMOND_PATH;
+            node = new Konva.Path({
+              ...common,
+              data: pathData,
+              scaleX: pathScaleX,
+              scaleY: pathScaleY,
+              fill: el.fill,
+              stroke: el.stroke,
+              strokeWidth: (el.strokeWidth || 0) * scale,
+            });
+            break;
+          }
+          case "line":
+            node = new Konva.Line({
+              ...common,
+              points: [0, 0, el.width * scale, 0],
+              stroke: el.stroke || "#1e293b",
+              strokeWidth: (el.strokeWidth || 3) * scale,
+              dash: el.dash || [],
+            });
+            break;
+          case "arrow":
+            node = new Konva.Arrow({
+              ...common,
+              points: [0, 0, el.width * scale, 0],
+              stroke: el.stroke || "#1e293b",
+              strokeWidth: (el.strokeWidth || 3) * scale,
+              fill: el.stroke || "#1e293b",
+            });
+            break;
+          case "group": {
+            const groupX = el.x * scale;
+            const groupY = el.y * scale;
+            (el.children || []).forEach((child) => {
+              const childCommon = {
+                x: groupX + child.x * scale,
+                y: groupY + child.y * scale,
+                rotation: (child.rotation || 0) + (el.rotation || 0),
+                opacity: (child.opacity ?? 1) * (el.opacity ?? 1),
+                scaleX: (child.scaleX || 1) * (el.scaleX || 1),
+                scaleY: (child.scaleY || 1) * (el.scaleY || 1),
+              };
+              let childNode;
+              switch (child.type) {
+                case "rect":
+                  childNode = new Konva.Rect({
+                    ...childCommon,
+                    width: (child.width || 0) * scale,
+                    height: (child.height || 0) * scale,
+                    fill: child.fill || "#cccccc",
+                    stroke: child.stroke || "",
+                    strokeWidth: (child.strokeWidth || 0) * scale,
+                    cornerRadius: (child.cornerRadius || 0) * scale,
+                  });
+                  break;
+                case "circle":
+                  childNode = new Konva.Ellipse({
+                    ...childCommon,
+                    x: childCommon.x + ((child.width || 0) / 2) * scale,
+                    y: childCommon.y + ((child.height || 0) / 2) * scale,
+                    radiusX: ((child.width || 0) / 2) * scale,
+                    radiusY: ((child.height || 0) / 2) * scale,
+                    fill: child.fill,
+                    stroke: child.stroke,
+                    strokeWidth: (child.strokeWidth || 0) * scale,
+                  });
+                  break;
+                case "text":
+                  childNode = new Konva.Text({
+                    ...childCommon,
+                    width: (child.width || 0) * scale,
+                    text: child.text || "",
+                    fontSize: (child.fontSize || 24) * scale,
+                    fontFamily: child.fontFamily || "Inter",
+                    fontStyle: child.fontStyle || "normal",
+                    fill: child.fill || "#1e293b",
+                    align: child.align || "left",
+                    lineHeight: child.lineHeight || 1.2,
+                    letterSpacing: child.letterSpacing || 0,
+                    textDecoration: child.textDecoration || "",
+                  });
+                  break;
+                case "image": {
+                  const childImg = imageMap[child.id];
+                  if (childImg) {
+                    childNode = new Konva.Image({
+                      ...childCommon,
+                      image: childImg,
+                      width: (child.width || 0) * scale,
+                      height: (child.height || 0) * scale,
+                    });
+                  }
+                  break;
+                }
+                case "triangle":
+                case "pentagon":
+                  childNode = new Konva.RegularPolygon({
+                    ...childCommon,
+                    x: childCommon.x + ((child.width || 0) / 2) * scale,
+                    y: childCommon.y + ((child.height || 0) / 2) * scale,
+                    sides: child.type === "triangle" ? 3 : 5,
+                    radius: ((child.width || 0) / 2) * scale,
+                    fill: child.fill,
+                    stroke: child.stroke,
+                    strokeWidth: (child.strokeWidth || 0) * scale,
+                  });
+                  break;
+                case "star":
+                  childNode = new Konva.Star({
+                    ...childCommon,
+                    x: childCommon.x + ((child.width || 0) / 2) * scale,
+                    y: childCommon.y + ((child.height || 0) / 2) * scale,
+                    numPoints: 5,
+                    innerRadius: (child.width || 0) * 0.22 * scale,
+                    outerRadius: (child.width || 0) * 0.5 * scale,
+                    fill: child.fill,
+                    stroke: child.stroke,
+                    strokeWidth: (child.strokeWidth || 0) * scale,
+                  });
+                  break;
+                case "line":
+                  childNode = new Konva.Line({
+                    ...childCommon,
+                    points: [0, 0, (child.width || 0) * scale, 0],
+                    stroke: child.stroke || "#1e293b",
+                    strokeWidth: (child.strokeWidth || 3) * scale,
+                    dash: child.dash || [],
+                  });
+                  break;
+                case "arrow":
+                  childNode = new Konva.Arrow({
+                    ...childCommon,
+                    points: [0, 0, (child.width || 0) * scale, 0],
+                    stroke: child.stroke || "#1e293b",
+                    strokeWidth: (child.strokeWidth || 3) * scale,
+                    fill: child.stroke || "#1e293b",
+                  });
+                  break;
+                default:
+                  break;
+              }
+              if (childNode) layer.add(childNode);
+            });
+            break;
+          }
+          default:
+            break;
+        }
+        if (node) layer.add(node);
+      });
+
+      layer.draw();
+      const dataURL = stage.toDataURL({ mimeType, pixelRatio: 1 });
+      stage.destroy();
+      document.body.removeChild(container);
+      resolve(dataURL);
+    });
+  });
+}
+
+export async function exportPNG(pages, currentPageId, canvasSize, scale = 1, title = "design") {
+  const page = pages.find((p) => p.id === currentPageId);
+  if (!page) return;
+  const dataURL = await pageToDataURL(page, canvasSize, scale, "image/png");
+  saveAs(dataURL, `${title}.png`);
+}
+
+export async function exportJPG(pages, currentPageId, canvasSize, scale = 1, title = "design") {
+  const page = pages.find((p) => p.id === currentPageId);
+  if (!page) return;
+  const dataURL = await pageToDataURL(page, canvasSize, scale, "image/jpeg");
+  saveAs(dataURL, `${title}.jpg`);
+}
+
+export async function exportPDF(pages, currentPageId, canvasSize, allPages = false, title = "design") {
+  const targetPages = allPages ? pages : [pages.find((p) => p.id === currentPageId)].filter(Boolean);
+
+  const pdf = new jsPDF({
+    orientation: canvasSize.width > canvasSize.height ? "landscape" : "portrait",
+    unit: "px",
+    format: [canvasSize.width, canvasSize.height],
+  });
+
+  for (let i = 0; i < targetPages.length; i++) {
+    if (i > 0) pdf.addPage([canvasSize.width, canvasSize.height]);
+    const dataURL = await pageToDataURL(targetPages[i], canvasSize, 2, "image/jpeg");
+    pdf.addImage(dataURL, "JPEG", 0, 0, canvasSize.width, canvasSize.height);
+  }
+
+  pdf.save(`${title}.pdf`);
+}
+
+// Map our color scheme name to hex array for pptx (no # prefix)
+function getChartColors(el) {
+  const scheme = CHART_COLOR_SCHEMES[el.colorScheme || "purple"];
+  return scheme.map((c) => c.replace("#", ""));
+}
+
+// Convert canvas px coords to pptxgenjs inches
+function pxToInches(px, canvasSize, axis) {
+  const slideW = 10;
+  const slideH = 10 * (canvasSize.height / canvasSize.width);
+  return axis === "x"
+    ? (px / canvasSize.width) * slideW
+    : (px / canvasSize.height) * slideH;
+}
+
+export async function exportPPTX(pages, canvasSize, title = "Presentation") {
+  const pptx = new pptxgen();
+
+  const aspectRatio = canvasSize.height / canvasSize.width;
+  pptx.defineLayout({
+    name: "CUSTOM",
+    width: 10,
+    height: 10 * aspectRatio,
+  });
+  pptx.layout = "CUSTOM";
+
+  for (const page of pages) {
+    const slide = pptx.addSlide();
+
+    if (canvasSize.backgroundColor) {
+      slide.background = { color: canvasSize.backgroundColor.replace("#", "") };
+    }
+
+    for (const el of page.elements) {
+      if (el.visible === false) continue;
+
+      const x = pxToInches(el.x, canvasSize, "x");
+      const y = pxToInches(el.y, canvasSize, "y");
+      const w = pxToInches(el.width, canvasSize, "x");
+      const h = pxToInches(el.height, canvasSize, "y");
+      const opts = { x, y, w, h, rotate: el.rotation || 0 };
+
+      switch (el.type) {
+        case "text": {
+          slide.addText(el.text || "", {
+            ...opts,
+            fontSize: Math.round((el.fontSize || 24) * 0.75),
+            bold: (el.fontStyle || "").includes("bold"),
+            italic: (el.fontStyle || "").includes("italic"),
+            underline: { style: el.textDecoration === "underline" ? "sng" : "none" },
+            color: (el.fill || "#1e293b").replace("#", ""),
+            fontFace: el.fontFamily || "Calibri",
+            align: el.align || "left",
+            valign: "top",
+            wrap: true,
+            transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
+          });
+          break;
+        }
+
+        case "rect": {
+          slide.addShape(pptx.ShapeType.rect, {
+            ...opts,
+            fill: {
+              color: (el.fill || "#c084fc").replace("#", ""),
+              transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
+            },
+            line: el.stroke
+              ? { color: el.stroke.replace("#", ""), width: el.strokeWidth || 1 }
+              : { type: "none" },
+          });
+          break;
+        }
+
+        case "circle": {
+          slide.addShape(pptx.ShapeType.ellipse, {
+            ...opts,
+            fill: {
+              color: (el.fill || "#818cf8").replace("#", ""),
+              transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
+            },
+            line: el.stroke ? { color: el.stroke.replace("#", "") } : { type: "none" },
+          });
+          break;
+        }
+
+        case "chart": {
+          const colors = getChartColors(el);
+
+          switch (el.chartType) {
+            case "bar": {
+              const isHoriz = el.variant === "horizontal";
+              const isStack = el.variant === "stacked";
+
+              const chartData = (el.series || []).map((s) => ({
+                name: s.name,
+                labels: (el.data || []).map((row) => row.label),
+                values: (el.data || []).map((row) => row[s.key] || 0),
+              }));
+
+              slide.addChart(pptx.ChartType.bar, chartData, {
+                ...opts,
+                barDir: isHoriz ? "bar" : "col",
+                barGrouping: isStack ? "stacked" : "clustered",
+                chartColors: colors,
+                showLegend: el.showLegend,
+                legendPos: "b",
+                showTitle: !!el.title,
+                title: el.title || "",
+                showValue: false,
+              });
+              break;
+            }
+
+            case "line": {
+              const chartData = (el.series || []).map((s) => ({
+                name: s.name,
+                labels: (el.data || []).map((row) => row.label),
+                values: (el.data || []).map((row) => row[s.key] || 0),
+              }));
+
+              slide.addChart(pptx.ChartType.line, chartData, {
+                ...opts,
+                chartColors: colors,
+                showLegend: el.showLegend,
+                legendPos: "b",
+                lineDataSymbol: "circle",
+                lineDataSymbolSize: 6,
+                showTitle: !!el.title,
+                title: el.title || "",
+              });
+              break;
+            }
+
+            case "area": {
+              const chartData = (el.series || []).map((s) => ({
+                name: s.name,
+                labels: (el.data || []).map((row) => row.label),
+                values: (el.data || []).map((row) => row[s.key] || 0),
+              }));
+
+              slide.addChart(pptx.ChartType.area, chartData, {
+                ...opts,
+                chartColors: colors,
+                barGrouping: el.variant === "stacked" ? "stacked" : "standard",
+                showLegend: el.showLegend,
+                legendPos: "b",
+                showTitle: !!el.title,
+                title: el.title || "",
+              });
+              break;
+            }
+
+            case "pie": {
+              const chartData = [
+                {
+                  name: el.title || "Data",
+                  labels: (el.data || []).map((d) => d.label),
+                  values: (el.data || []).map((d) => d.value),
+                },
+              ];
+
+              slide.addChart(
+                el.variant === "donut" ? pptx.ChartType.doughnut : pptx.ChartType.pie,
+                chartData,
+                {
+                  ...opts,
+                  chartColors: (el.data || []).map((d) =>
+                    (d.color || colors[0]).replace("#", "")
+                  ),
+                  showLegend: el.showLegend,
+                  legendPos: "r",
+                  showTitle: !!el.title,
+                  title: el.title || "",
+                  holeSize: el.variant === "donut" ? 50 : undefined,
+                }
+              );
+              break;
+            }
+
+            case "scatter": {
+              const chartData = [
+                {
+                  name: "Data",
+                  values: (el.data || []).map((d) => ({ x: d.x, y: d.y })),
+                },
+              ];
+
+              slide.addChart(pptx.ChartType.scatter, chartData, {
+                ...opts,
+                chartColors: colors,
+                showTitle: !!el.title,
+                title: el.title || "",
+              });
+              break;
+            }
+
+            case "radar": {
+              const chartData = (el.series || []).map((s) => ({
+                name: s.name,
+                labels: (el.data || []).map((row) => row.label),
+                values: (el.data || []).map((row) => row[s.key] || 0),
+              }));
+
+              slide.addChart(pptx.ChartType.radar, chartData, {
+                ...opts,
+                chartColors: colors,
+                showLegend: el.showLegend,
+                legendPos: "b",
+                showTitle: !!el.title,
+                title: el.title || "",
+              });
+              break;
+            }
+
+            default: {
+              slide.addShape(pptx.ShapeType.rect, {
+                ...opts,
+                fill: { color: "F3F4F6" },
+                line: { color: "E5E7EB" },
+              });
+              slide.addText(`[${el.chartType} chart]`, {
+                ...opts,
+                align: "center",
+                valign: "middle",
+                color: "9CA3AF",
+                fontSize: 11,
+              });
+              break;
+            }
+          }
+          break;
+        }
+
+        case "image": {
+          if (el.src) {
+            try {
+              slide.addImage({
+                data: el.src,
+                ...opts,
+                transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
+              });
+            } catch (e) {
+              console.error("PPTX image error", e);
+            }
+          }
+          break;
+        }
+
+        default:
+          break;
+      }
+    }
+  }
+
+  pptx.writeFile({ fileName: `${title}.pptx` });
+}

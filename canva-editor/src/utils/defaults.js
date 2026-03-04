@@ -1,0 +1,232 @@
+export const DEFAULT_CANVAS_SIZE = { width: 816, height: 1056, backgroundColor: '#ffffff' };
+
+export const DEFAULT_ELEMENT_PROPS = {
+  rect:     { type:'rect',     x:200, y:200, width:150, height:100, fill:'#c084fc', stroke:'', strokeWidth:0, cornerRadius:0, opacity:1, rotation:0 },
+  circle:   { type:'circle',   x:200, y:200, width:120, height:120, fill:'#818cf8', stroke:'', strokeWidth:0, opacity:1, rotation:0 },
+  triangle: { type:'triangle', x:200, y:200, width:120, height:120, fill:'#34d399', stroke:'', strokeWidth:0, opacity:1, rotation:0 },
+  star:     { type:'star',     x:200, y:200, width:120, height:120, fill:'#fbbf24', stroke:'', strokeWidth:0, opacity:1, rotation:0 },
+  pentagon: { type:'pentagon', x:200, y:200, width:120, height:120, fill:'#f472b6', stroke:'', strokeWidth:0, opacity:1, rotation:0 },
+  heart:    { type:'heart',    x:200, y:200, width:120, height:120, fill:'#ec4899', stroke:'', strokeWidth:0, opacity:1, rotation:0 },
+  diamond:  { type:'diamond',  x:200, y:200, width:120, height:120, fill:'#a78bfa', stroke:'', strokeWidth:0, opacity:1, rotation:0 },
+  line:     { type:'line',     x:150, y:300, width:200, height:0,   stroke:'#1e293b', strokeWidth:3, dash:[], opacity:1, rotation:0 },
+  arrow:    { type:'arrow',    x:150, y:300, width:200, height:0,   stroke:'#1e293b', strokeWidth:3, opacity:1, rotation:0 },
+  text:     { type:'text',     x:100, y:100, width:300, height:60,  text:'Double-click to edit', fontSize:24, fontFamily:'Inter', fontStyle:'normal', fill:'#1e293b', align:'left', opacity:1, rotation:0 },
+  image:    { type:'image',    x:100, y:100, width:300, height:300, src:'', opacity:1, rotation:0 },
+};
+
+export const CANVAS_PRESETS = [
+  { name: 'A4 Poster',         width: 816,  height: 1056 },
+  { name: 'Presentation 16:9', width: 960,  height: 540  },
+  { name: 'Instagram Post',    width: 600,  height: 600  },
+  { name: 'Twitter Banner',    width: 1000, height: 333  },
+  { name: 'Business Card',     width: 504,  height: 288  },
+  { name: 'Facebook Cover',    width: 820,  height: 312  },
+];
+
+export const FONT_PAIRS = [
+  { heading: 'Playfair Display', body: 'Lato' },
+  { heading: 'Montserrat',       body: 'Open Sans' },
+  { heading: 'Raleway',          body: 'Merriweather' },
+  { heading: 'Oswald',           body: 'Roboto' },
+  { heading: 'Dancing Script',   body: 'Inter' },
+  { heading: 'Bebas Neue',       body: 'Inter' },
+];
+
+export const GRADIENT_PRESETS = [
+  { name: 'Purple Pink',  colors: ['#7c3aed','#ec4899'] },
+  { name: 'Blue Cyan',    colors: ['#2563eb','#06b6d4'] },
+  { name: 'Orange Yellow',colors: ['#ea580c','#eab308'] },
+  { name: 'Green Teal',   colors: ['#16a34a','#0d9488'] },
+  { name: 'Red Orange',   colors: ['#dc2626','#ea580c'] },
+  { name: 'Dark Navy',    colors: ['#1e1b4b','#312e81'] },
+];
+
+export const BACKGROUND_COLORS = [
+  '#ffffff','#f8fafc','#f1f5f9','#e2e8f0','#cbd5e1',
+  '#fef9c3','#fef3c7','#fde68a','#fed7aa','#fecaca',
+  '#d1fae5','#a7f3d0','#99f6e4','#bfdbfe','#ddd6fe',
+  '#fbcfe8','#1e293b','#0f172a','#18181b','#111827',
+];
+
+export const CHART_DEFAULTS = {
+  bar: {
+    type: 'chart',
+    chartType: 'bar',
+    x: 80, y: 80, width: 500, height: 320,
+    rotation: 0, opacity: 1,
+    title: 'Bar Chart',
+    showLegend: true,
+    showGrid: true,
+    showTooltip: true,
+    colorScheme: 'purple',
+    variant: 'grouped',
+    data: [
+      { label: 'Q1', series1: 40, series2: 24 },
+      { label: 'Q2', series1: 55, series2: 38 },
+      { label: 'Q3', series1: 67, series2: 43 },
+      { label: 'Q4', series1: 80, series2: 56 },
+    ],
+    series: [
+      { key: 'series1', name: 'Series 1', color: '#7c3aed' },
+      { key: 'series2', name: 'Series 2', color: '#a78bfa' },
+    ],
+  },
+  line: {
+    type: 'chart', chartType: 'line',
+    x: 80, y: 80, width: 500, height: 320,
+    rotation: 0, opacity: 1,
+    title: 'Line Chart',
+    showLegend: true, showGrid: true,
+    variant: 'linear',
+    colorScheme: 'purple',
+    data: [
+      { label: 'Jan', series1: 30, series2: 20 },
+      { label: 'Feb', series1: 45, series2: 35 },
+      { label: 'Mar', series1: 38, series2: 42 },
+      { label: 'Apr', series1: 60, series2: 38 },
+      { label: 'May', series1: 55, series2: 50 },
+      { label: 'Jun', series1: 72, series2: 55 },
+    ],
+    series: [
+      { key: 'series1', name: 'Series 1', color: '#7c3aed' },
+      { key: 'series2', name: 'Series 2', color: '#06b6d4' },
+    ],
+  },
+  area: {
+    type: 'chart', chartType: 'area',
+    x: 80, y: 80, width: 500, height: 320,
+    rotation: 0, opacity: 1,
+    title: 'Area Chart',
+    showLegend: true, showGrid: true,
+    variant: 'stacked',
+    colorScheme: 'purple',
+    data: [
+      { label: 'Jan', series1: 40, series2: 24 },
+      { label: 'Feb', series1: 55, series2: 38 },
+      { label: 'Mar', series1: 47, series2: 42 },
+      { label: 'Apr', series1: 68, series2: 30 },
+      { label: 'May', series1: 60, series2: 45 },
+    ],
+    series: [
+      { key: 'series1', name: 'Series 1', color: '#7c3aed' },
+      { key: 'series2', name: 'Series 2', color: '#a78bfa' },
+    ],
+  },
+  pie: {
+    type: 'chart', chartType: 'pie',
+    x: 80, y: 80, width: 400, height: 320,
+    rotation: 0, opacity: 1,
+    title: 'Pie Chart',
+    showLegend: true,
+    variant: 'pie',
+    colorScheme: 'purple',
+    data: [
+      { label: 'Category A', value: 35, color: '#7c3aed' },
+      { label: 'Category B', value: 28, color: '#06b6d4' },
+      { label: 'Category C', value: 20, color: '#10b981' },
+      { label: 'Category D', value: 17, color: '#f59e0b' },
+    ],
+  },
+  scatter: {
+    type: 'chart', chartType: 'scatter',
+    x: 80, y: 80, width: 500, height: 320,
+    rotation: 0, opacity: 1,
+    title: 'Scatter Plot',
+    showLegend: true, showGrid: true,
+    colorScheme: 'purple',
+    data: [
+      { x: 10, y: 30, z: 200 },
+      { x: 30, y: 45, z: 300 },
+      { x: 50, y: 20, z: 150 },
+      { x: 70, y: 60, z: 400 },
+      { x: 90, y: 40, z: 250 },
+      { x: 20, y: 55, z: 180 },
+      { x: 60, y: 75, z: 350 },
+    ],
+    series: [{ key: 'data', name: 'Data Points', color: '#7c3aed' }],
+  },
+  radar: {
+    type: 'chart', chartType: 'radar',
+    x: 80, y: 80, width: 400, height: 360,
+    rotation: 0, opacity: 1,
+    title: 'Radar Chart',
+    showLegend: true,
+    colorScheme: 'purple',
+    data: [
+      { label: 'Speed', series1: 80, series2: 60 },
+      { label: 'Power', series1: 65, series2: 90 },
+      { label: 'Range', series1: 90, series2: 70 },
+      { label: 'Accuracy', series1: 75, series2: 85 },
+      { label: 'Endurance', series1: 55, series2: 75 },
+    ],
+    series: [
+      { key: 'series1', name: 'Product A', color: '#7c3aed' },
+      { key: 'series2', name: 'Product B', color: '#06b6d4' },
+    ],
+  },
+  funnel: {
+    type: 'chart', chartType: 'funnel',
+    x: 80, y: 80, width: 400, height: 340,
+    rotation: 0, opacity: 1,
+    title: 'Funnel Chart',
+    showLegend: false,
+    colorScheme: 'purple',
+    data: [
+      { label: 'Visitors', value: 5000, color: '#7c3aed' },
+      { label: 'Leads', value: 3200, color: '#8b5cf6' },
+      { label: 'Prospects', value: 1800, color: '#a78bfa' },
+      { label: 'Customers', value: 900, color: '#c4b5fd' },
+      { label: 'Retained', value: 500, color: '#ddd6fe' },
+    ],
+  },
+  treemap: {
+    type: 'chart', chartType: 'treemap',
+    x: 80, y: 80, width: 500, height: 340,
+    rotation: 0, opacity: 1,
+    title: 'Treemap',
+    showLegend: false,
+    colorScheme: 'purple',
+    data: [
+      { label: 'Product A', value: 400 },
+      { label: 'Product B', value: 300 },
+      { label: 'Product C', value: 200 },
+      { label: 'Product D', value: 150 },
+      { label: 'Product E', value: 100 },
+      { label: 'Product F', value: 80 },
+    ],
+  },
+  radialBar: {
+    type: 'chart', chartType: 'radialBar',
+    x: 80, y: 80, width: 400, height: 360,
+    rotation: 0, opacity: 1,
+    title: 'Radial Bar',
+    showLegend: true,
+    colorScheme: 'purple',
+    data: [
+      { label: 'Design', value: 85, color: '#7c3aed' },
+      { label: 'Development', value: 72, color: '#8b5cf6' },
+      { label: 'Marketing', value: 60, color: '#a78bfa' },
+      { label: 'Sales', value: 91, color: '#06b6d4' },
+    ],
+  },
+  progress: {
+    type: 'chart', chartType: 'progress',
+    x: 80, y: 80, width: 280, height: 280,
+    rotation: 0, opacity: 1,
+    title: 'Progress',
+    variant: 'ring',
+    value: 72,
+    color: '#7c3aed',
+    trackColor: '#e9d5ff',
+    showLabel: true,
+    strokeWidth: 20,
+  },
+};
+
+export const CHART_COLOR_SCHEMES = {
+  purple: ['#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe'],
+  blue: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe'],
+  teal: ['#0d9488', '#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4', '#ccfbf1'],
+  warm: ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a'],
+  mono: ['#1e293b', '#334155', '#475569', '#64748b', '#94a3b8', '#cbd5e1'],
+};

@@ -1,0 +1,13 @@
+{
+  "name": "@deck-web/schema",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./schema/PresentationSchema.ts",
+  "types": "./schema/PresentationSchema.ts",
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
