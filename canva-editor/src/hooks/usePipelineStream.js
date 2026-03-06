@@ -6,7 +6,7 @@ import {
   applyBrandKitToPages,
 } from "../utils/importContentSchema";
 
-const WS_URL = "ws://localhost:3002";
+const WS_URL = "ws://localhost:3001";
 
 export function usePipelineStream() {
   const wsRef = useRef(null);

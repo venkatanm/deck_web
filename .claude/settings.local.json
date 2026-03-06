@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls d:/Deck_Web/canva-editor/.env*)",
+      "Bash(ls d:/Deck_Web/canva-editor/vite.config.*)"
+    ]
+  }
+}

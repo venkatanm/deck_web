@@ -434,15 +434,17 @@ export async function exportPPTX(pages, canvasSize, title = "Presentation", expo
         }
 
         case "rect": {
-          slide.addShape(pptx.ShapeType.rect, {
+          const hasRadius = (el.cornerRadius || 0) > 0;
+          const rectFill = el.fill && el.fill !== 'transparent'
+            ? { color: el.fill.replace("#", ""), transparency: Math.round((1 - (el.opacity ?? 1)) * 100) }
+            : { type: "none" };
+          slide.addShape(hasRadius ? pptx.ShapeType.roundRect : pptx.ShapeType.rect, {
             ...opts,
-            fill: {
-              color: (el.fill || "#c084fc").replace("#", ""),
-              transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
-            },
+            fill: rectFill,
             line: el.stroke
               ? { color: el.stroke.replace("#", ""), width: el.strokeWidth || 1 }
               : { type: "none" },
+            ...(hasRadius ? { rectRadius: Math.min(0.5, (el.cornerRadius / Math.min(el.width, el.height)) * (w < h ? w : h)) } : {}),
           });
           break;
         }

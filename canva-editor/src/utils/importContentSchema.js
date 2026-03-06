@@ -216,9 +216,61 @@ function buildChart(content, W, H, primary, bg, font) {
   ];
 }
 
+function estimateBulletHeight(text, fontSize, lineHeight, availableWidth) {
+  // Approximate character width at given font size (Inter ~0.52x ratio)
+  const avgCharW = fontSize * 0.52;
+  const charsPerLine = Math.max(1, Math.floor(availableWidth / avgCharW));
+  const lines = Math.max(1, Math.ceil(text.length / charsPerLine));
+  return lines * fontSize * lineHeight;
+}
+
 function buildBullets(content, W, H, primary, bg, font) {
   const points = content.points || [];
   const bodyClr = "#374151";
+  const subheadClr = "#1e293b";
+  const fontSize = 17;
+  const lineHeight = 1.5;
+  const textX = 80;
+  const textW = W - 160;
+  const startY = 100;
+  const bottomPad = 40;
+  const gap = 12; // extra gap between bullets
+
+  const bulletEls = [];
+  let currentY = startY;
+
+  for (const pt of points) {
+    if (currentY >= H - bottomPad) break;
+
+    // Detect sub-headers: short text (under 50 chars), no sentence punctuation
+    const isSubhead = pt.length < 50 && !/[.,;]/.test(pt);
+
+    if (isSubhead) {
+      // Render as a small bold sub-header with a bit of top breathing room
+      if (bulletEls.length > 0) currentY += 6;
+      const h = fontSize * lineHeight;
+      bulletEls.push(
+        mkText(textX - 8, currentY, textW, pt, fontSize, subheadClr, {
+          bold: true,
+          fontFamily: font,
+          lineHeight,
+        })
+      );
+      currentY += h + gap - 4;
+    } else {
+      const label = `• ${pt}`;
+      const h = estimateBulletHeight(label, fontSize, lineHeight, textW);
+      bulletEls.push(
+        mkText(textX, currentY, textW, label, fontSize, bodyClr, {
+          fontFamily: font,
+          lineHeight,
+          height: h,
+        })
+      );
+      currentY += h + gap;
+    }
+  }
+
   return [
     mkRect(0, 0, W, H, bg || "#ffffff"),
     mkRect(0, 0, W, 5, primary),
@@ -227,12 +279,7 @@ function buildBullets(content, W, H, primary, bg, font) {
       fontFamily: font,
     }),
     mkLine(60, 78, W - 120, "#e2e8f0", { strokeWidth: 1 }),
-    ...points.slice(0, 6).map((pt, i) =>
-      mkText(80, 100 + i * 60, W - 160, `• ${pt}`, 17, bodyClr, {
-        fontFamily: font,
-        lineHeight: 1.5,
-      })
-    ),
+    ...bulletEls,
   ];
 }
 

@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { RefreshCw, Shuffle, Sparkles } from "lucide-react";
+import { RefreshCw, Shuffle, Sparkles, Undo2 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
 import { LAYOUT_DEFINITIONS, suggestLayouts } from "../data/layoutDefinitions";
 import { useToast } from "./Toast";
@@ -36,14 +36,18 @@ export default function LayoutsPanel() {
 
   const [hoveredId, setHoveredId] = useState(null);
   const [rearrangeMode, setRearrangeMode] = useState(false);
+  const [lastRearranged, setLastRearranged] = useState(null); // { name } after rearrange apply
+
+  // Clear undo banner when user navigates to a different slide
+  useEffect(() => { setLastRearranged(null); }, [currentPageId]);
 
   // Current page's applied layout
   const currentPage = pages?.find((p) => p.id === currentPageId);
   const appliedLayoutId = currentPage?.appliedLayoutId ?? null;
 
-  // Once any layout is applied, all other layouts are locked
+  // In rearrange mode all layouts are available; in fresh mode lock once one is applied
   const isLayoutLocked = (layout) =>
-    appliedLayoutId !== null && layout.id !== appliedLayoutId;
+    !rearrangeMode && appliedLayoutId !== null && layout.id !== appliedLayoutId;
 
   // Smart suggestions based on current slide content
   const suggestedIds = useMemo(() => suggestLayouts(elements), [elements]);
@@ -60,17 +64,26 @@ export default function LayoutsPanel() {
 
     if (rearrangeMode && elements.length > 0) {
       newElements = layout.apply(elements.map((e) => ({ ...e })), canvasSize);
+      setLastRearranged({ name: layout.name });
     } else {
       newElements = layout.generate
         ? layout.generate(canvasSize)
         : layout.apply(elements.map((e) => ({ ...e })), canvasSize);
+      setLastRearranged(null);
+      toast(`"${layout.name}" applied! Press Ctrl+Z to undo.`, "success");
     }
 
     updatePage(currentPageId, {
       elements: newElements.map((e) => ({ ...e, id: e.id || uuidv4() })),
       appliedLayoutId: layout.id,
     });
-    toast(`"${layout.name}" applied! Press Ctrl+Z to undo.`, "success");
+  };
+
+  const undo = useEditorStore((s) => s.undo);
+
+  const handleRearrangeUndo = () => {
+    undo?.();
+    setLastRearranged(null);
   };
 
   return (
@@ -83,7 +96,7 @@ export default function LayoutsPanel() {
       <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
         <button
           type="button"
-          onClick={() => setRearrangeMode(false)}
+          onClick={() => { setRearrangeMode(false); setLastRearranged(null); }}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition-colors ${
             !rearrangeMode ? "bg-white text-purple-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
           }`}
@@ -93,7 +106,7 @@ export default function LayoutsPanel() {
         </button>
         <button
           type="button"
-          onClick={() => setRearrangeMode(true)}
+          onClick={() => { setRearrangeMode(true); setLastRearranged(null); }}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition-colors ${
             rearrangeMode ? "bg-white text-purple-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
           }`}
@@ -108,6 +121,23 @@ export default function LayoutsPanel() {
           ? "Your existing content will be repositioned into the selected layout structure."
           : "Placeholder content is created — then edit the text and images to your liking."}
       </p>
+
+      {/* Rearrange undo banner */}
+      {lastRearranged && (
+        <div className="flex items-center justify-between gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
+          <span className="text-[11px] text-blue-700 leading-snug">
+            <strong>"{lastRearranged.name}"</strong> applied to your slide.
+          </span>
+          <button
+            type="button"
+            onClick={handleRearrangeUndo}
+            className="flex items-center gap-1 text-[11px] font-semibold text-blue-700 hover:text-blue-900 whitespace-nowrap"
+          >
+            <Undo2 size={12} />
+            Undo
+          </button>
+        </div>
+      )}
 
       {/* Layout lock notice */}
       {appliedLayoutId && (
@@ -206,343 +236,564 @@ function LayoutButton({ layout, isActive, isHovered, onHover, onApply, locked, h
   );
 }
 
-const CATEGORY_DEFAULTS = {
-  intro: 'center', text: 'bullets', data: 'chart', visual: 'cover',
-  process: 'timeline', strategy: 'grid', closing: 'cta',
-};
-
-const LAYOUT_ICON_OVERRIDES = {
-  agenda: 'agenda', 'section-divider': 'divider', 'two-column': 'cols-2',
-  'three-column': 'cols-3', blockquote: 'quote', 'presenter-bio': 'team',
-  'title-bullets': 'bullets', 'bar-chart': 'chart', 'scatter-plot': 'process',
-  waterfall: 'waterfall', dashboard: 'kpi', 'kpi-grid': 'kpi',
-  funnel: 'funnel', 'donut-chart': 'stat', 'data-table': 'grid',
-  'financial-summary': 'chart', 'full-bleed-image': 'cover',
-  'picture-caption': 'bleed-r', 'image-gallery': 'grid', 'video-placeholder': 'cover',
-  'icon-grid': 'grid', 'device-mockup': 'bleed-r', 'before-after': 'compare',
-  'horizontal-timeline': 'timeline', 'vertical-timeline': 'timeline',
-  'chevron-steps': 'process', 'circular-lifecycle': 'venn',
-  gantt: 'gantt', 'product-roadmap': 'roadmap', swimlane: 'gantt',
-  swot: 'swot', 'competitor-quadrant': 'chart', persona: 'persona',
-  'pricing-tiers': 'cols-3', 'org-chart': 'org', 'meet-the-team': 'grid',
-  'maturity-model': 'chart', 'gtm-strategy': 'grid',
-  'business-model-canvas': 'grid', 'pros-cons': 'compare',
-  pyramid: 'funnel', 'hub-spoke': 'hub', venn: 'venn',
-  'investment-ask': 'stat', cta: 'cta', 'qa-slide': 'center',
-  'resource-links': 'grid', 'contact-thankyou': 'split-lr', appendix: 'bullets',
-  'title-center': 'center', 'mission-vision': 'cols-2',
-  'value-prop': 'cols-3', 'executive-summary': 'cols-3',
-  'problem-statement': 'cover', 'user-flow': 'process',
-  'architecture-diagram': 'process', 'big-number': 'stat', 'key-takeaways': 'bullets',
-  'text-sidebar': 'bleed-l',
+// Accurate per-layout miniature previews — 16:9 viewBox (160×90)
+const LAYOUT_PREVIEWS = {
+  'title-center': (
+    <>
+      <rect x="8" y="34" width="90" height="10" rx="2" fill="#111" />
+      <rect x="8" y="48" width="60" height="5" rx="1.5" fill="#555" />
+    </>
+  ),
+  'title-center-centered': (
+    <>
+      <rect x="44" y="12" width="72" height="7" rx="10" fill="none" stroke="#111" strokeWidth="1.5" />
+      <rect x="20" y="32" width="120" height="14" rx="2" fill="#111" />
+      <rect x="16" y="52" width="128" height="6" rx="1.5" fill="#444" />
+    </>
+  ),
+  'title-subtitle-below': (
+    <>
+      <rect x="20" y="22" width="120" height="18" rx="2" fill="#111" />
+      <rect x="36" y="54" width="88" height="6" rx="1.5" fill="#555" />
+    </>
+  ),
+  'section-divider': (
+    <>
+      <rect x="8" y="20" width="100" height="16" rx="2" fill="#111" />
+      <rect x="8" y="42" width="70" height="5" rx="1.5" fill="#666" />
+    </>
+  ),
+  'dark-title': (
+    <>
+      <rect x="0" y="0" width="160" height="90" rx="3" fill="#111" />
+      <rect x="16" y="26" width="128" height="14" rx="2" fill="#fff" />
+      <rect x="32" y="46" width="96" height="5" rx="1.5" fill="#888" />
+    </>
+  ),
+  'thank-you': (
+    <>
+      <rect x="16" y="24" width="128" height="20" rx="2" fill="#111" />
+      <rect x="32" y="54" width="96" height="5" rx="1.5" fill="#888" />
+    </>
+  ),
+  cta: (
+    <>
+      <rect x="0" y="0" width="160" height="90" rx="3" fill="#111" />
+      <rect x="12" y="18" width="136" height="16" rx="2" fill="#fff" />
+      <rect x="20" y="42" width="120" height="6" rx="1.5" fill="#888" />
+      <rect x="48" y="58" width="64" height="14" rx="7" fill="#fff" />
+    </>
+  ),
+  'agenda-list': (
+    <>
+      <rect x="4" y="6" width="50" height="10" rx="2" fill="#111" />
+      {[20, 34, 48, 62, 76].map((y, i) => (
+        <g key={i}>
+          <circle cx="68" cy={y + 4} r="5" fill="#111" />
+          <rect x="78" cy={y} y={y} width="74" height="9" rx="1.5" fill="#111" />
+        </g>
+      ))}
+    </>
+  ),
+  'agenda-grid': (
+    <>
+      <rect x="4" y="4" width="50" height="9" rx="2" fill="#111" />
+      {[0, 1, 2, 3, 4, 5].map((i) => {
+        const col = i % 3; const row = Math.floor(i / 3);
+        return <rect key={i} x={4 + col * 52} y={18 + row * 34} width="48" height="30" rx="4" fill="#111" />;
+      })}
+    </>
+  ),
+  'agenda-3col': (
+    <>
+      <rect x="32" y="4" width="96" height="10" rx="2" fill="#111" />
+      {[0, 1, 2].map((i) => (
+        <g key={i}>
+          <circle cx={28 + i * 52} cy="36" r="10" fill="#111" />
+          <rect x={4 + i * 52} y="52" width="48" height="8" rx="2" fill="#333" />
+        </g>
+      ))}
+    </>
+  ),
+  'title-bullets': (
+    <>
+      <rect x="4" y="4" width="100" height="12" rx="2" fill="#111" />
+      <rect x="4" y="20" width="152" height="1.5" fill="#ddd" />
+      {[26, 37, 48, 59, 70].map((y, i) => (
+        <g key={i}>
+          <circle cx="10" cy={y + 3} r="2.5" fill="#111" />
+          <rect x="16" y={y} width="138" height="6" rx="1.5" fill="#444" />
+        </g>
+      ))}
+    </>
+  ),
+  'two-column': (
+    <>
+      <rect x="4" y="4" width="152" height="12" rx="2" fill="#111" />
+      <rect x="4" y="22" width="72" height="6" rx="1.5" fill="#555" />
+      <rect x="4" y="32" width="68" height="5" rx="1.5" fill="#777" />
+      <rect x="4" y="41" width="70" height="5" rx="1.5" fill="#777" />
+      <rect x="84" y="22" width="72" height="6" rx="1.5" fill="#555" />
+      <rect x="84" y="32" width="68" height="5" rx="1.5" fill="#777" />
+      <rect x="84" y="41" width="70" height="5" rx="1.5" fill="#777" />
+    </>
+  ),
+  'title-two-col-body': (
+    <>
+      <rect x="4" y="4" width="100" height="12" rx="2" fill="#111" />
+      {[22, 32, 42, 52, 62, 72].map((y, i) => (
+        <rect key={i} x={i < 3 ? 4 : 84} y={22 + (i % 3) * 16} width="68" height="6" rx="1.5" fill="#555" />
+      ))}
+    </>
+  ),
+  blockquote: (
+    <>
+      <rect x="4" y="2" width="18" height="24" rx="2" fill="#ddd" />
+      <rect x="8" y="30" width="144" height="18" rx="2" fill="#111" />
+      <rect x="8" y="54" width="40" height="5" rx="1.5" fill="#888" />
+    </>
+  ),
+  'dark-quote': (
+    <>
+      <rect x="0" y="0" width="160" height="90" rx="3" fill="#111" />
+      <rect x="8" y="4" width="18" height="24" rx="2" fill="#444" />
+      <rect x="8" y="30" width="144" height="18" rx="2" fill="#fff" />
+      <rect x="8" y="56" width="40" height="5" rx="1.5" fill="#888" />
+    </>
+  ),
+  'big-number': (
+    <>
+      <rect x="16" y="10" width="128" height="40" rx="2" fill="#111" />
+      <rect x="32" y="58" width="96" height="7" rx="2" fill="#555" />
+    </>
+  ),
+  'two-cards': (
+    <>
+      <rect x="4" y="6" width="72" height="78" rx="6" fill="#111" />
+      <circle cx="24" cy="24" r="8" fill="#fff" />
+      <rect x="10" y="52" width="60" height="8" rx="2" fill="#fff" />
+      <rect x="84" y="6" width="72" height="78" rx="6" fill="#111" />
+      <circle cx="104" cy="24" r="8" fill="#fff" />
+      <rect x="90" y="52" width="60" height="8" rx="2" fill="#fff" />
+    </>
+  ),
+  'four-cards': (
+    <>
+      {[0, 1, 2, 3].map((i) => {
+        const col = i % 2; const row = Math.floor(i / 2);
+        return (
+          <g key={i}>
+            <rect x={4 + col * 78} y={4 + row * 42} width="74" height="38" rx="5" fill="#111" />
+            <rect x={14 + col * 78} y={18 + row * 42} width="54" height="6" rx="2" fill="#fff" />
+          </g>
+        );
+      })}
+    </>
+  ),
+  'image-right': (
+    <>
+      <rect x="0" y="0" width="74" height="90" rx="0" fill="#d0d0d0" />
+      <rect x="82" y="14" width="70" height="14" rx="2" fill="#111" />
+      <rect x="82" y="34" width="66" height="5" rx="1.5" fill="#555" />
+      <rect x="82" y="43" width="60" height="5" rx="1.5" fill="#777" />
+      <rect x="82" y="52" width="64" height="5" rx="1.5" fill="#777" />
+    </>
+  ),
+  'image-left': (
+    <>
+      <rect x="8" y="14" width="70" height="14" rx="2" fill="#111" />
+      <rect x="8" y="34" width="66" height="5" rx="1.5" fill="#555" />
+      <rect x="8" y="43" width="60" height="5" rx="1.5" fill="#777" />
+      <rect x="86" y="0" width="74" height="90" rx="0" fill="#d0d0d0" />
+    </>
+  ),
+  'image-left-bullets': (
+    <>
+      <rect x="0" y="0" width="68" height="90" rx="0" fill="#d0d0d0" />
+      <rect x="74" y="10" width="78" height="10" rx="2" fill="#111" />
+      {[28, 42, 56].map((y, i) => (
+        <g key={i}>
+          <circle cx="80" cy={y + 3} r="2.5" fill="#111" />
+          <rect x="86" y={y} width="64" height="5" rx="1.5" fill="#444" />
+        </g>
+      ))}
+    </>
+  ),
+  'heading-three-images': (
+    <>
+      <rect x="16" y="3" width="128" height="12" rx="2" fill="#111" />
+      <rect x="8" y="22" width="44" height="62" rx="4" fill="#d0d0d0" />
+      <rect x="58" y="22" width="44" height="62" rx="4" fill="#d0d0d0" />
+      <rect x="108" y="22" width="44" height="62" rx="4" fill="#d0d0d0" />
+    </>
+  ),
+  venn: (
+    <>
+      <circle cx="56" cy="48" r="36" fill="#888" opacity="0.6" />
+      <circle cx="104" cy="48" r="36" fill="#333" opacity="0.7" />
+    </>
+  ),
+  'full-bleed-text': (
+    <>
+      <rect x="0" y="0" width="160" height="90" rx="3" fill="#333" />
+      <rect x="0" y="48" width="160" height="42" rx="0" fill="#111" opacity="0.8" />
+      <rect x="8" y="54" width="110" height="12" rx="2" fill="#fff" />
+      <rect x="8" y="72" width="70" height="5" rx="1.5" fill="#aaa" />
+    </>
+  ),
+  'highlight-box': (
+    <>
+      <rect x="8" y="4" width="100" height="12" rx="2" fill="#111" />
+      <rect x="10" y="24" width="140" height="52" rx="8" fill="#111" />
+      <rect x="20" y="38" width="120" height="8" rx="2" fill="#fff" />
+      <rect x="30" y="52" width="100" height="6" rx="1.5" fill="#888" />
+    </>
+  ),
+  'photo-grid-4': (
+    <>
+      <rect x="1" y="1" width="78" height="43" rx="3" fill="#d0d0d0" />
+      <rect x="81" y="1" width="78" height="43" rx="3" fill="#bbb" />
+      <rect x="1" y="46" width="78" height="43" rx="3" fill="#bbb" />
+      <rect x="81" y="46" width="78" height="43" rx="3" fill="#d0d0d0" />
+    </>
+  ),
+  'photo-grid-3': (
+    <>
+      <rect x="1" y="1" width="78" height="88" rx="3" fill="#d0d0d0" />
+      <rect x="81" y="1" width="78" height="42" rx="3" fill="#bbb" />
+      <rect x="81" y="46" width="78" height="43" rx="3" fill="#bbb" />
+    </>
+  ),
+  'team-grid': (
+    <>
+      <rect x="4" y="4" width="100" height="10" rx="2" fill="#111" />
+      {[0, 1, 2, 3].map((i) => {
+        const col = i % 2; const row = Math.floor(i / 2);
+        const cx = 24 + col * 76; const cy = 24 + row * 36;
+        return (
+          <g key={i}>
+            <circle cx={cx} cy={cy} r="10" fill="#ddd" />
+            <rect x={cx - 20} y={cy + 14} width="40" height="5" rx="1.5" fill="#333" />
+          </g>
+        );
+      })}
+    </>
+  ),
+  'hub-spoke': (
+    <>
+      <circle cx="80" cy="52" r="12" fill="#111" />
+      {[0, 1, 2, 3, 4].map((i) => {
+        const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        const sx = 80 + Math.cos(angle) * 34;
+        const sy = 52 + Math.sin(angle) * 30;
+        return (
+          <g key={i}>
+            <line x1="80" y1="52" x2={sx} y2={sy} stroke="#aaa" strokeWidth="1.5" />
+            <rect x={sx - 14} y={sy - 7} width="28" height="14" rx="4" fill="#f0f0f0" stroke="#111" strokeWidth="1" />
+          </g>
+        );
+      })}
+      <rect x="66" y="46" width="28" height="12" rx="2" fill="#111" />
+    </>
+  ),
+  pyramid: (
+    <>
+      {[
+        { w: 36, fill: '#111' },
+        { w: 72, fill: '#444' },
+        { w: 108, fill: '#888' },
+        { w: 144, fill: '#ccc' },
+      ].map((l, i) => (
+        <rect key={i} x={(160 - l.w) / 2} y={8 + i * 20} width={l.w} height="17" rx="3" fill={l.fill} />
+      ))}
+    </>
+  ),
+  'horizontal-timeline': (
+    <>
+      <rect x="4" y="4" width="80" height="12" rx="2" fill="#111" />
+      <rect x="4" y="42" width="152" height="3" fill="#111" rx="1.5" />
+      {[4, 56, 108].map((x, i) => (
+        <g key={i}>
+          <circle cx={x + 5} cy="43" r="6" fill="#111" />
+          <rect x={x - 8} y="54" width="36" height="5" rx="1.5" fill="#333" />
+          <rect x={x - 8} y="63" width="30" height="4" rx="1.5" fill="#888" />
+        </g>
+      ))}
+      <circle cx="155" cy="43" r="6" fill="#111" />
+    </>
+  ),
+  'vertical-timeline': (
+    <>
+      <rect x="4" y="4" width="80" height="12" rx="2" fill="#111" />
+      <rect x="20" y="22" width="3" height="64" rx="1.5" fill="#111" />
+      {[22, 42, 62].map((y, i) => (
+        <g key={i}>
+          <circle cx="21" cy={y + 4} r="5" fill="#111" />
+          <rect x="32" y={y} width="80" height="6" rx="1.5" fill="#333" />
+          <rect x="32" y={y + 10} width="60" height="4" rx="1.5" fill="#aaa" />
+        </g>
+      ))}
+    </>
+  ),
+  'three-steps': (
+    <>
+      <rect x="16" y="4" width="128" height="10" rx="2" fill="#111" />
+      {[0, 1, 2].map((i) => (
+        <g key={i}>
+          <circle cx={26 + i * 54} cy="38" r="12" fill="#111" />
+          <rect x={4 + i * 54} y="56" width="44" height="6" rx="2" fill="#333" />
+          <rect x={8 + i * 54} y="66" width="36" height="4" rx="1.5" fill="#aaa" />
+        </g>
+      ))}
+    </>
+  ),
+  'four-steps': (
+    <>
+      <rect x="16" y="4" width="128" height="10" rx="2" fill="#111" />
+      {[0, 1, 2, 3].map((i) => (
+        <rect key={i} x={4 + i * 39} y="22" width="35" height="62" rx="5" fill={i % 2 === 0 ? '#111' : '#333'} />
+      ))}
+    </>
+  ),
+  'before-after': (
+    <>
+      <rect x="4" y="4" width="100" height="10" rx="2" fill="#111" />
+      <rect x="4" y="20" width="72" height="66" rx="6" fill="#eee" />
+      <rect x="10" y="24" width="60" height="6" rx="1.5" fill="#999" />
+      <rect x="84" y="20" width="72" height="66" rx="6" fill="#111" />
+      <rect x="90" y="24" width="60" height="6" rx="1.5" fill="#888" />
+    </>
+  ),
+  'pros-cons': (
+    <>
+      <rect x="16" y="2" width="128" height="10" rx="2" fill="#111" />
+      <rect x="4" y="16" width="72" height="70" rx="6" fill="#eee" />
+      <rect x="84" y="16" width="72" height="70" rx="6" fill="#111" />
+      {[26, 38, 50].map((y, i) => (
+        <g key={i}>
+          <rect x="10" y={y} width="60" height="5" rx="1.5" fill="#777" />
+          <rect x="90" y={y} width="60" height="5" rx="1.5" fill="#aaa" />
+        </g>
+      ))}
+    </>
+  ),
+  'three-pillars': (
+    <>
+      <rect x="4" y="4" width="80" height="10" rx="2" fill="#111" />
+      {[0, 1, 2].map((i) => (
+        <rect key={i} x={4 + i * 52} y="20" width="48" height="66" rx="5"
+          fill={i === 1 ? '#111' : '#eee'} stroke={i === 1 ? 'none' : '#ccc'} strokeWidth="1" />
+      ))}
+    </>
+  ),
+  swot: (
+    <>
+      {[
+        { x: 1, y: 1, fill: '#111' }, { x: 81, y: 1, fill: '#444' },
+        { x: 1, y: 46, fill: '#eee' }, { x: 81, y: 46, fill: '#ddd' },
+      ].map((q, i) => (
+        <g key={i}>
+          <rect x={q.x} y={q.y} width="78" height="43" rx="3" fill={q.fill} />
+          <rect x={q.x + 6} y={q.y + 8} width="40" height="6" rx="1.5"
+            fill={i < 2 ? '#fff' : '#555'} />
+        </g>
+      ))}
+    </>
+  ),
+  'numbered-list': (
+    <>
+      <rect x="4" y="4" width="80" height="10" rx="2" fill="#111" />
+      {[22, 38, 54, 70].map((y, i) => (
+        <g key={i}>
+          <rect x="4" y={y} width="10" height="10" rx="1" fill="#ddd" />
+          <rect x="20" y={y + 2} width="134" height="1.5" fill="#eee" />
+          <rect x="20" y={y + 4} width="110" height="6" rx="1.5" fill="#444" />
+        </g>
+      ))}
+    </>
+  ),
+  'five-features': (
+    <>
+      <rect x="4" y="4" width="80" height="10" rx="2" fill="#111" />
+      {[20, 33, 46, 59, 72].map((y, i) => (
+        <g key={i}>
+          <rect x="4" y={y} width="10" height="5" rx="1" fill="#ccc" />
+          <rect x="4" y={y + 7} width="152" height="1" fill="#eee" />
+          <rect x="20" y={y} width="44" height="6" rx="1.5" fill="#333" />
+          <rect x="72" y={y} width="84" height="5" rx="1.5" fill="#888" />
+        </g>
+      ))}
+    </>
+  ),
+  'heading-buttons': (
+    <>
+      <rect x="20" y="14" width="120" height="18" rx="2" fill="#111" />
+      <rect x="24" y="42" width="48" height="16" rx="8" fill="#111" />
+      <rect x="88" y="42" width="48" height="16" rx="8" fill="#111" />
+    </>
+  ),
+  'two-stats': (
+    <>
+      <rect x="20" y="4" width="120" height="8" rx="2" fill="#111" />
+      <rect x="4" y="16" width="72" height="70" rx="6" fill="#111" />
+      <rect x="84" y="16" width="72" height="70" rx="6" fill="#eee" />
+      <rect x="8" y="34" width="64" height="18" rx="2" fill="#fff" />
+      <rect x="88" y="34" width="64" height="18" rx="2" fill="#111" />
+    </>
+  ),
+  'four-stats': (
+    <>
+      <rect x="20" y="2" width="120" height="9" rx="2" fill="#111" />
+      {[0, 1, 2, 3].map((i) => {
+        const col = i % 2; const row = Math.floor(i / 2);
+        return (
+          <g key={i}>
+            <rect x={4 + col * 78} y={14 + row * 38} width="74" height="34" rx="5"
+              fill={i % 2 === 0 ? '#111' : '#eee'} />
+            <rect x={14 + col * 78} y={22 + row * 38} width="54" height="10" rx="2"
+              fill={i % 2 === 0 ? '#fff' : '#111'} />
+          </g>
+        );
+      })}
+    </>
+  ),
+  'kpi-grid': (
+    <>
+      <rect x="4" y="4" width="80" height="10" rx="2" fill="#111" />
+      {[0, 1, 2, 3].map((i) => {
+        const col = i % 2; const row = Math.floor(i / 2);
+        return (
+          <g key={i}>
+            <rect x={4 + col * 78} y={20 + row * 36} width="74" height="32" rx="4" fill="#f4f4f4" />
+            <rect x={8 + col * 78} y={26 + row * 36} width="44" height="8" rx="2" fill="#111" />
+          </g>
+        );
+      })}
+    </>
+  ),
+  table: (
+    <>
+      <rect x="4" y="4" width="90" height="10" rx="2" fill="#111" />
+      <rect x="4" y="18" width="152" height="10" rx="2" fill="#111" />
+      {[30, 42, 54, 66].map((y, i) => (
+        <g key={i}>
+          <rect x="4" y={y} width="152" height="10" rx="0" fill={i % 2 === 0 ? '#f4f4f4' : '#fff'} />
+          <rect x="8" y={y + 2} width="36" height="5" rx="1.5" fill="#555" />
+          <rect x="52" y={y + 2} width="24" height="5" rx="1.5" fill="#777" />
+          <rect x="84" y={y + 2} width="24" height="5" rx="1.5" fill="#777" />
+          <rect x="122" y={y + 2} width="28" height="5" rx="1.5" fill="#777" />
+        </g>
+      ))}
+    </>
+  ),
+  'bar-chart': (
+    <>
+      <rect x="4" y="4" width="80" height="10" rx="2" fill="#111" />
+      <rect x="14" y="70" width="136" height="2" fill="#ccc" />
+      {[
+        { h: 28, x: 20 }, { h: 42, x: 42 }, { h: 34, x: 64 },
+        { h: 52, x: 86 }, { h: 46, x: 108 }, { h: 58, x: 130 },
+      ].map((b, i) => (
+        <rect key={i} x={b.x} y={72 - b.h} width="16" height={b.h} rx="2" fill="#111" />
+      ))}
+    </>
+  ),
+  'chart-bullets': (
+    <>
+      <rect x="4" y="4" width="60" height="10" rx="2" fill="#111" />
+      {[22, 34, 46, 58, 70].map((y, i) => (
+        <g key={i}>
+          <circle cx="10" cy={y + 3} r="2.5" fill="#111" />
+          <rect x="16" y={y} width="52" height="5" rx="1.5" fill="#555" />
+        </g>
+      ))}
+      <rect x="84" y="16" width="2" height="60" fill="#ccc" />
+      <rect x="84" y="74" width="72" height="2" fill="#ccc" />
+      {[
+        { h: 24, x: 88 }, { h: 38, x: 100 }, { h: 30, x: 112 },
+        { h: 50, x: 124 }, { h: 44, x: 136 },
+      ].map((b, i) => (
+        <rect key={i} x={b.x} y={76 - b.h} width="10" height={b.h} rx="2" fill="#111" />
+      ))}
+    </>
+  ),
+  testimonial: (
+    <>
+      <circle cx="80" cy="18" r="12" fill="#ddd" />
+      <rect x="8" y="22" width="24" height="20" rx="2" fill="#eee" />
+      <rect x="16" y="38" width="128" height="10" rx="2" fill="#111" />
+      <rect x="24" y="52" width="112" height="7" rx="2" fill="#555" />
+      <rect x="48" y="66" width="64" height="6" rx="1.5" fill="#888" />
+      <rect x="56" y="76" width="48" height="5" rx="1.5" fill="#aaa" />
+    </>
+  ),
+  roadmap: (
+    <>
+      <rect x="4" y="4" width="80" height="10" rx="2" fill="#111" />
+      <rect x="4" y="18" width="152" height="10" rx="2" fill="#111" />
+      {[0, 1, 2].map((ri) => (
+        <g key={ri}>
+          <rect x="4" y={32 + ri * 20} width="152" height="17" rx="0"
+            fill={ri % 2 === 0 ? '#f4f4f4' : '#fff'} />
+          <rect x={4 + [0, 38, 19][ri]} y={35 + ri * 20}
+            width={[57, 76, 96][ri]} height="10" rx="4"
+            fill={['#111', '#444', '#888'][ri]} />
+        </g>
+      ))}
+    </>
+  ),
+  gantt: (
+    <>
+      <rect x="4" y="4" width="80" height="10" rx="2" fill="#111" />
+      <rect x="4" y="18" width="152" height="8" rx="2" fill="#111" />
+      {[
+        { start: 0, span: 2 }, { start: 1, span: 3 },
+        { start: 3, span: 5 }, { start: 6, span: 2 }, { start: 7, span: 2 },
+      ].map((t, i) => {
+        const unit = 17;
+        return (
+          <g key={i}>
+            <rect x="4" y={30 + i * 12} width="152" height="10"
+              fill={i % 2 === 0 ? '#f4f4f4' : '#fff'} />
+            <rect x={28 + t.start * unit} y={32 + i * 12}
+              width={t.span * unit - 2} height="6" rx="2"
+              fill={['#111', '#333', '#555', '#777', '#999'][i]} />
+          </g>
+        );
+      })}
+    </>
+  ),
+  'hub-spoke': (
+    <>
+      <circle cx="80" cy="52" r="12" fill="#111" />
+      {[0, 1, 2, 3, 4].map((i) => {
+        const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        const sx = 80 + Math.cos(angle) * 34;
+        const sy = 52 + Math.sin(angle) * 30;
+        return (
+          <g key={i}>
+            <line x1="80" y1="52" x2={sx} y2={sy} stroke="#ccc" strokeWidth="1.5" />
+            <rect x={sx - 14} y={sy - 7} width="28" height="14" rx="4"
+              fill="#f0f0f0" stroke="#111" strokeWidth="1" />
+          </g>
+        );
+      })}
+    </>
+  ),
 };
 
 function LayoutPreviewIcon({ layout }) {
-  const structure = LAYOUT_ICON_OVERRIDES[layout.id]
-    ?? layout.preview?.structure
-    ?? CATEGORY_DEFAULTS[layout.category]
-    ?? 'default';
-  const icons = {
-    center: (
-      <>
-        <rect x="4" y="22" width="56" height="8" rx="3" fill="#7c3aed" />
-        <rect x="12" y="34" width="40" height="5" rx="2" fill="#c4b5fd" />
-        <rect x="18" y="43" width="28" height="4" rx="2" fill="#e9d5ff" />
-      </>
-    ),
-    "split-lr": (
-      <>
-        <rect x="2" y="2" width="24" height="60" rx="3" fill="#7c3aed" opacity="0.8" />
-        <rect x="30" y="8" width="32" height="8" rx="2" fill="#7c3aed" />
-        <rect x="30" y="20" width="32" height="5" rx="2" fill="#c4b5fd" />
-        <rect x="30" y="29" width="24" height="5" rx="2" fill="#c4b5fd" opacity="0.7" />
-        <rect x="30" y="42" width="32" height="8" rx="2" fill="#7c3aed" opacity="0.5" />
-        <rect x="30" y="54" width="24" height="5" rx="2" fill="#c4b5fd" opacity="0.5" />
-      </>
-    ),
-    stat: (
-      <>
-        <rect x="6" y="10" width="52" height="26" rx="3" fill="#7c3aed" />
-        <rect x="14" y="42" width="36" height="7" rx="2" fill="#c4b5fd" />
-        <rect x="20" y="53" width="24" height="5" rx="2" fill="#e9d5ff" />
-      </>
-    ),
-    "cols-3": (
-      <>
-        <rect x="2" y="4" width="60" height="7" rx="2" fill="#7c3aed" opacity="0.8" />
-        <rect x="2" y="15" width="17" height="36" rx="3" fill="#c4b5fd" opacity="0.8" />
-        <rect x="23" y="15" width="18" height="36" rx="3" fill="#c4b5fd" opacity="0.6" />
-        <rect x="45" y="15" width="17" height="36" rx="3" fill="#c4b5fd" opacity="0.4" />
-      </>
-    ),
-    "bleed-l": (
-      <>
-        <rect x="2" y="2" width="26" height="60" rx="3" fill="#94a3b8" opacity="0.5" />
-        <rect x="32" y="8" width="30" height="9" rx="2" fill="#7c3aed" />
-        <rect x="32" y="21" width="30" height="5" rx="2" fill="#c4b5fd" />
-        <rect x="32" y="30" width="22" height="5" rx="2" fill="#c4b5fd" opacity="0.7" />
-        <rect x="32" y="46" width="30" height="5" rx="2" fill="#e9d5ff" />
-      </>
-    ),
-    "bleed-r": (
-      <>
-        <rect x="4" y="8" width="28" height="9" rx="2" fill="#7c3aed" />
-        <rect x="4" y="21" width="28" height="5" rx="2" fill="#c4b5fd" />
-        <rect x="4" y="30" width="22" height="5" rx="2" fill="#c4b5fd" opacity="0.7" />
-        <rect x="4" y="46" width="28" height="5" rx="2" fill="#e9d5ff" />
-        <rect x="36" y="2" width="26" height="60" rx="3" fill="#94a3b8" opacity="0.5" />
-      </>
-    ),
-    quote: (
-      <>
-        <rect x="6" y="8" width="12" height="16" rx="2" fill="#7c3aed" opacity="0.6" />
-        <rect x="8" y="26" width="48" height="10" rx="2" fill="#7c3aed" opacity="0.4" />
-        <rect x="14" y="40" width="36" height="6" rx="2" fill="#c4b5fd" />
-        <rect x="22" y="50" width="20" height="4" rx="2" fill="#e9d5ff" />
-      </>
-    ),
-    grid: (
-      <>
-        <rect x="2" y="2" width="60" height="9" rx="2" fill="#7c3aed" />
-        <rect x="2" y="15" width="28" height="21" rx="3" fill="#c4b5fd" opacity="0.7" />
-        <rect x="34" y="15" width="28" height="21" rx="3" fill="#c4b5fd" opacity="0.7" />
-        <rect x="2" y="40" width="28" height="21" rx="3" fill="#e9d5ff" />
-        <rect x="34" y="40" width="28" height="21" rx="3" fill="#e9d5ff" />
-      </>
-    ),
-    timeline: (
-      <>
-        <rect x="4" y="30" width="56" height="4" rx="2" fill="#c4b5fd" />
-        <rect x="10" y="12" width="10" height="16" rx="2" fill="#7c3aed" />
-        <circle cx="15" cy="32" r="4" fill="#7c3aed" />
-        <rect x="27" y="36" width="10" height="14" rx="2" fill="#a78bfa" />
-        <circle cx="32" cy="32" r="4" fill="#7c3aed" />
-        <rect x="44" y="12" width="10" height="16" rx="2" fill="#7c3aed" opacity="0.6" />
-        <circle cx="49" cy="32" r="4" fill="#7c3aed" />
-      </>
-    ),
-    agenda: (
-      <>
-        <rect x="4" y="4" width="36" height="8" rx="2" fill="#7c3aed" />
-        <rect x="4" y="18" width="8" height="8" rx="2" fill="#7c3aed" opacity="0.8" />
-        <rect x="16" y="20" width="44" height="4" rx="2" fill="#c4b5fd" />
-        <rect x="4" y="30" width="8" height="8" rx="2" fill="#7c3aed" opacity="0.7" />
-        <rect x="16" y="32" width="40" height="4" rx="2" fill="#c4b5fd" opacity="0.8" />
-        <rect x="4" y="42" width="8" height="8" rx="2" fill="#7c3aed" opacity="0.6" />
-        <rect x="16" y="44" width="44" height="4" rx="2" fill="#c4b5fd" opacity="0.7" />
-        <rect x="4" y="54" width="8" height="8" rx="2" fill="#7c3aed" opacity="0.5" />
-        <rect x="16" y="56" width="36" height="4" rx="2" fill="#c4b5fd" opacity="0.6" />
-      </>
-    ),
-    divider: (
-      <>
-        <rect x="2" y="2" width="60" height="60" rx="3" fill="#0f172a" />
-        <rect x="6" y="28" width="12" height="4" rx="2" fill="#7c3aed" />
-        <rect x="6" y="36" width="50" height="10" rx="2" fill="#ffffff" opacity="0.9" />
-        <rect x="6" y="50" width="32" height="5" rx="2" fill="#94a3b8" opacity="0.6" />
-      </>
-    ),
-    "cols-2": (
-      <>
-        <rect x="2" y="2" width="60" height="8" rx="2" fill="#7c3aed" />
-        <rect x="2" y="14" width="28" height="46" rx="3" fill="#c4b5fd" opacity="0.5" />
-        <rect x="34" y="14" width="28" height="46" rx="3" fill="#c4b5fd" opacity="0.3" />
-      </>
-    ),
-    compare: (
-      <>
-        <rect x="2" y="4" width="60" height="7" rx="2" fill="#1e293b" opacity="0.6" />
-        <rect x="2" y="15" width="28" height="44" rx="3" fill="#fca5a5" opacity="0.7" />
-        <rect x="34" y="15" width="28" height="44" rx="3" fill="#86efac" opacity="0.7" />
-        <rect x="26" y="34" width="12" height="12" rx="6" fill="#1e293b" opacity="0.7" />
-      </>
-    ),
-    process: (
-      <>
-        <rect x="2" y="22" width="12" height="28" rx="3" fill="#7c3aed" />
-        <rect x="17" y="16" width="12" height="34" rx="3" fill="#a78bfa" />
-        <rect x="32" y="28" width="12" height="22" rx="3" fill="#c4b5fd" />
-        <rect x="47" y="10" width="12" height="40" rx="3" fill="#7c3aed" />
-        <rect x="2" y="52" width="57" height="3" rx="2" fill="#e2e8f0" />
-      </>
-    ),
-    cover: (
-      <>
-        <rect x="2" y="2" width="60" height="60" rx="3" fill="#0f172a" />
-        <rect x="2" y="2" width="60" height="60" rx="3" fill="#7c3aed" opacity="0.2" />
-        <rect x="6" y="22" width="50" height="12" rx="3" fill="#ffffff" opacity="0.9" />
-        <rect x="6" y="38" width="30" height="6" rx="2" fill="#94a3b8" opacity="0.7" />
-        <rect x="6" y="48" width="20" height="4" rx="2" fill="#64748b" opacity="0.5" />
-      </>
-    ),
-    cta: (
-      <>
-        <rect x="4" y="12" width="56" height="12" rx="3" fill="#7c3aed" opacity="0.8" />
-        <rect x="10" y="28" width="44" height="7" rx="2" fill="#c4b5fd" opacity="0.6" />
-        <rect x="10" y="42" width="18" height="10" rx="5" fill="#7c3aed" />
-        <rect x="32" y="42" width="18" height="10" rx="5" fill="none" stroke="#7c3aed" strokeWidth="2" />
-      </>
-    ),
-    team: (
-      <>
-        <circle cx="20" cy="32" r="18" fill="#e2e8f0" />
-        <rect x="42" y="10" width="18" height="10" rx="2" fill="#7c3aed" opacity="0.8" />
-        <rect x="42" y="24" width="18" height="6" rx="2" fill="#c4b5fd" />
-        <rect x="42" y="34" width="18" height="5" rx="2" fill="#e2e8f0" />
-        <rect x="42" y="43" width="18" height="5" rx="2" fill="#e2e8f0" />
-        <rect x="42" y="52" width="12" height="5" rx="2" fill="#e2e8f0" />
-      </>
-    ),
-    bullets: (
-      <>
-        <rect x="4" y="4" width="48" height="8" rx="2" fill="#7c3aed" />
-        <rect x="4" y="16" width="56" height="2" rx="1" fill="#e2e8f0" />
-        {[22, 32, 42, 52].map((y, i) => (
-          <g key={i}>
-            <rect x="4" y={y + 2} width="5" height="5" rx="2.5" fill="#7c3aed" opacity={0.9 - i * 0.15} />
-            <rect x="12" y={y} width="48" height="7" rx="2" fill="#94a3b8" opacity={0.5 - i * 0.05} />
-          </g>
-        ))}
-      </>
-    ),
-    chart: (
-      <>
-        <rect x="2" y="50" width="60" height="2" rx="1" fill="#e2e8f0" />
-        <rect x="5"  y="28" width="8" height="24" rx="2" fill="#c4b5fd" />
-        <rect x="16" y="18" width="8" height="34" rx="2" fill="#c4b5fd" />
-        <rect x="27" y="34" width="8" height="18" rx="2" fill="#c4b5fd" />
-        <rect x="38" y="10" width="8" height="42" rx="2" fill="#7c3aed" />
-        <rect x="49" y="22" width="8" height="30" rx="2" fill="#c4b5fd" />
-      </>
-    ),
-    funnel: (
-      <>
-        <rect x="4" y="8" width="56" height="11" rx="3" fill="#0f172a" />
-        <rect x="10" y="22" width="44" height="10" rx="3" fill="#4f46e5" />
-        <rect x="16" y="35" width="32" height="10" rx="3" fill="#7c3aed" />
-        <rect x="22" y="48" width="20" height="10" rx="3" fill="#c4b5fd" />
-      </>
-    ),
-    kpi: (
-      <>
-        <rect x="2" y="2" width="27" height="27" rx="4" fill="#7c3aed" opacity="0.15" stroke="#7c3aed" strokeWidth="1.5" />
-        <rect x="35" y="2" width="27" height="27" rx="4" fill="#0891b2" opacity="0.15" stroke="#0891b2" strokeWidth="1.5" />
-        <rect x="2" y="35" width="27" height="27" rx="4" fill="#10b981" opacity="0.15" stroke="#10b981" strokeWidth="1.5" />
-        <rect x="35" y="35" width="27" height="27" rx="4" fill="#f59e0b" opacity="0.15" stroke="#f59e0b" strokeWidth="1.5" />
-        <rect x="6" y="14" width="18" height="8" rx="2" fill="#7c3aed" />
-        <rect x="39" y="14" width="18" height="8" rx="2" fill="#0891b2" />
-        <rect x="6" y="47" width="18" height="8" rx="2" fill="#10b981" />
-        <rect x="39" y="47" width="18" height="8" rx="2" fill="#f59e0b" />
-      </>
-    ),
-    swot: (
-      <>
-        <rect x="2" y="2" width="28" height="28" rx="3" fill="#10b981" opacity="0.25" />
-        <rect x="34" y="2" width="28" height="28" rx="3" fill="#f59e0b" opacity="0.25" />
-        <rect x="2" y="34" width="28" height="28" rx="3" fill="#0891b2" opacity="0.25" />
-        <rect x="34" y="34" width="28" height="28" rx="3" fill="#ef4444" opacity="0.25" />
-        <rect x="5" y="8" width="22" height="5" rx="2" fill="#10b981" opacity="0.8" />
-        <rect x="37" y="8" width="22" height="5" rx="2" fill="#f59e0b" opacity="0.8" />
-        <rect x="5" y="40" width="22" height="5" rx="2" fill="#0891b2" opacity="0.8" />
-        <rect x="37" y="40" width="22" height="5" rx="2" fill="#ef4444" opacity="0.8" />
-      </>
-    ),
-    venn: (
-      <>
-        <circle cx="22" cy="34" r="20" fill="#7c3aed" opacity="0.45" />
-        <circle cx="42" cy="34" r="20" fill="#0891b2" opacity="0.45" />
-        <circle cx="32" cy="22" r="20" fill="#10b981" opacity="0.45" />
-      </>
-    ),
-    org: (
-      <>
-        <rect x="22" y="4" width="20" height="12" rx="3" fill="#0f172a" />
-        <rect x="31" y="16" width="2" height="8" rx="1" fill="#e2e8f0" />
-        <rect x="8" y="24" width="20" height="11" rx="3" fill="#7c3aed" />
-        <rect x="36" y="24" width="20" height="11" rx="3" fill="#7c3aed" />
-        <rect x="8" y="47" width="14" height="10" rx="3" fill="#c4b5fd" opacity="0.7" />
-        <rect x="25" y="47" width="14" height="10" rx="3" fill="#c4b5fd" opacity="0.7" />
-        <rect x="42" y="47" width="14" height="10" rx="3" fill="#c4b5fd" opacity="0.7" />
-      </>
-    ),
-    persona: (
-      <>
-        <rect x="2" y="2" width="20" height="60" rx="3" fill="#0f172a" />
-        <circle cx="12" cy="20" r="8" fill="#1e3a5f" />
-        <rect x="4" y="36" width="16" height="5" rx="2" fill="#7c3aed" opacity="0.8" />
-        <rect x="4" y="44" width="16" height="4" rx="2" fill="#475569" />
-        <rect x="26" y="6" width="36" height="8" rx="2" fill="#7c3aed" />
-        <rect x="26" y="18" width="36" height="4" rx="2" fill="#c4b5fd" opacity="0.7" />
-        <rect x="26" y="26" width="28" height="4" rx="2" fill="#c4b5fd" opacity="0.5" />
-        <rect x="26" y="38" width="36" height="8" rx="2" fill="#ef4444" opacity="0.5" />
-        <rect x="26" y="50" width="28" height="4" rx="2" fill="#fca5a5" opacity="0.5" />
-      </>
-    ),
-    gantt: (
-      <>
-        <rect x="2" y="2" width="60" height="9" rx="2" fill="#0f172a" />
-        <rect x="2" y="14" width="60" height="11" rx="0" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
-        <rect x="4" y="17" width="30" height="5" rx="2" fill="#7c3aed" />
-        <rect x="2" y="27" width="60" height="11" rx="0" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
-        <rect x="18" y="30" width="36" height="5" rx="2" fill="#0891b2" />
-        <rect x="2" y="40" width="60" height="11" rx="0" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
-        <rect x="30" y="43" width="24" height="5" rx="2" fill="#10b981" />
-        <rect x="2" y="53" width="60" height="9" rx="0" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
-        <rect x="42" y="56" width="16" height="4" rx="2" fill="#f59e0b" />
-      </>
-    ),
-    hub: (
-      <>
-        <circle cx="32" cy="32" r="10" fill="#7c3aed" />
-        <circle cx="12" cy="14" r="7" fill="#f1f5f9" stroke="#7c3aed" strokeWidth="1.5" />
-        <circle cx="52" cy="14" r="7" fill="#f1f5f9" stroke="#7c3aed" strokeWidth="1.5" />
-        <circle cx="12" cy="50" r="7" fill="#f1f5f9" stroke="#7c3aed" strokeWidth="1.5" />
-        <circle cx="52" cy="50" r="7" fill="#f1f5f9" stroke="#7c3aed" strokeWidth="1.5" />
-        <line x1="32" y1="32" x2="12" y2="14" stroke="#e2e8f0" strokeWidth="2" />
-        <line x1="32" y1="32" x2="52" y2="14" stroke="#e2e8f0" strokeWidth="2" />
-        <line x1="32" y1="32" x2="12" y2="50" stroke="#e2e8f0" strokeWidth="2" />
-        <line x1="32" y1="32" x2="52" y2="50" stroke="#e2e8f0" strokeWidth="2" />
-      </>
-    ),
-    waterfall: (
-      <>
-        <rect x="2" y="52" width="60" height="2" rx="1" fill="#e2e8f0" />
-        <rect x="4" y="22" width="8" height="30" rx="2" fill="#0f172a" />
-        <rect x="15" y="10" width="8" height="18" rx="2" fill="#10b981" />
-        <rect x="26" y="18" width="8" height="10" rx="2" fill="#10b981" />
-        <rect x="37" y="26" width="8" height="8" rx="2" fill="#ef4444" />
-        <rect x="48" y="14" width="8" height="36" rx="2" fill="#7c3aed" />
-      </>
-    ),
-    roadmap: (
-      <>
-        <rect x="2" y="2" width="60" height="9" rx="2" fill="#0f172a" />
-        <rect x="2" y="14" width="14" height="9" rx="2" fill="#7c3aed" opacity="0.9" />
-        <rect x="18" y="14" width="14" height="9" rx="2" fill="#7c3aed" opacity="0.7" />
-        <rect x="34" y="14" width="14" height="9" rx="2" fill="#7c3aed" opacity="0.5" />
-        <rect x="50" y="14" width="12" height="9" rx="2" fill="#7c3aed" opacity="0.3" />
-        <rect x="2" y="26" width="10" height="9" rx="2" fill="#0891b2" opacity="0.9" />
-        <rect x="14" y="26" width="22" height="9" rx="2" fill="#0891b2" opacity="0.7" />
-        <rect x="38" y="26" width="16" height="9" rx="2" fill="#0891b2" opacity="0.5" />
-        <rect x="2" y="38" width="18" height="9" rx="2" fill="#10b981" opacity="0.9" />
-        <rect x="22" y="38" width="12" height="9" rx="2" fill="#10b981" opacity="0.7" />
-        <rect x="36" y="38" width="26" height="9" rx="2" fill="#10b981" opacity="0.5" />
-      </>
-    ),
-    default: (
-      <rect x="4" y="4" width="56" height="56" rx="4" fill="#e2e8f0" />
-    ),
-  };
-
+  const preview = LAYOUT_PREVIEWS[layout.id];
   return (
     <svg
-      width="64"
-      height="64"
-      viewBox="0 0 64 64"
-      className="flex-shrink-0 bg-gray-50 rounded-lg w-full"
+      width="100%"
+      viewBox="0 0 160 90"
+      className="flex-shrink-0 bg-white rounded-lg w-full border border-gray-100"
       style={{ height: 56 }}
     >
-      {icons[structure] ?? icons.default}
+      {preview ?? (
+        <rect x="4" y="4" width="152" height="82" rx="4" fill="#f0f0f0" />
+      )}
     </svg>
   );
 }
