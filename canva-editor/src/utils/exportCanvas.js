@@ -37,7 +37,7 @@ export async function pageToDataURL(page, canvasSize, scale = 1, mimeType = "ima
     });
     layer.add(bg);
 
-    const imageElements = page.elements.flatMap((el) =>
+    const imageElements = (page.elements || []).flatMap((el) =>
       el.type === "group"
         ? (el.children || []).filter((c) => c.type === "image")
         : el.type === "image"
@@ -56,7 +56,7 @@ export async function pageToDataURL(page, canvasSize, scale = 1, mimeType = "ima
     Promise.all(imagePromises).then((loadedImages) => {
       const imageMap = Object.fromEntries(loadedImages.map((i) => [i.id, i.img]));
 
-      page.elements.forEach((el) => {
+      (page.elements || []).forEach((el) => {
         let node;
         const common = {
           x: el.x * scale,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Upload, Plus, Trash2, Loader2 } from "lucide-react";
-import { saveImage, getAllImages, deleteImage } from "../utils/imageStorage";
+import { uploadImage, listImages, deleteImage } from "../api/images";
 import { compressImage } from "../utils/compressImage";
 import { HexColorPicker } from "react-colorful";
 import { v4 as uuidv4 } from "uuid";
@@ -21,27 +21,97 @@ import {
 } from "../utils/defaults";
 import { STARTER_TEMPLATES } from "../utils/starterTemplates";
 import { CHART_ICON_MAP, GroupedBarIcon } from "./charts/ChartIcons";
-import { PRESENTATION_TEMPLATES } from "../data/presentationTemplates";
+import { PRESENTATION_TEMPLATES, BLANK_TEMPLATE } from "../data/presentationTemplates";
 import { FONT_COMBINATIONS } from "../data/fontCombinations";
-import { LayoutTemplate } from "lucide-react";
+import { LayoutTemplate, FileUp, X, Check } from "lucide-react";
+
+// ── User template library (stored in sessionStorage for simplicity, persisted via API) ──
+const USER_TEMPLATES_KEY = "user_pptx_templates";
+
+function loadUserTemplates() {
+  try {
+    return JSON.parse(sessionStorage.getItem(USER_TEMPLATES_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
 
 export function TemplatesPanel() {
   const [search, setSearch] = useState("");
   const [activeCategory, setCategory] = useState("All");
+  const [userTemplates, setUserTemplates] = useState(loadUserTemplates);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const toast = useToast();
 
-  const categories = ["All", "Business", "Technology", "Education", "Creative", "Marketing"];
+  // Load templates from API on mount and merge with session cache
+  useEffect(() => {
+    import("../api/templates").then(({ listTemplates }) =>
+      listTemplates()
+        .then((apiTemplates) => {
+          if (!Array.isArray(apiTemplates) || apiTemplates.length === 0) return;
+          const normalized = apiTemplates.map((t) => ({
+            ...t,
+            canvasSize: t.canvasSize || t.canvas_size || { width: 1920, height: 1080 },
+            thumbnail: t.thumbnail || { bg: t.thumbnail_bg || "#f1f5f9" },
+          }));
+          setUserTemplates(normalized);
+          sessionStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(normalized));
+        })
+        .catch(() => {/* offline – use session cache */})
+    );
+  }, []);
 
-  const filtered = PRESENTATION_TEMPLATES.filter((t) => {
-    const matchCat = activeCategory === "All" || t.category === activeCategory;
+  const categories = ["All", "Business", "Technology", "Education", "Creative", "Marketing", "My Uploads", "Global"];
+
+  const allTemplates = [...PRESENTATION_TEMPLATES, ...userTemplates];
+
+  const filtered = allTemplates.filter((t) => {
+    if (activeCategory === "My Uploads") return userTemplates.some((ut) => ut.id === t.id);
+    const matchCat = activeCategory === "All" || t.category === activeCategory || (activeCategory !== "My Uploads" && t.id === "blank");
     const matchSearch =
       !search ||
       t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()));
+      (t.tags || []).some((tag) => tag.toLowerCase().includes(search.toLowerCase()));
     return matchCat && matchSearch;
   });
 
+  const handlePptxUpload = async (file) => {
+    if (!file) return;
+    if (!file.name.endsWith(".pptx")) {
+      toast("Please upload a .pptx file", "error");
+      return;
+    }
+    setUploading(true);
+    try {
+      const { uploadPptxTemplate } = await import("../api/templates");
+      const result = await uploadPptxTemplate(file);
+      const newTemplate = {
+        ...result,
+        category: "My Uploads",
+        tags: result.tags || ["uploaded", "pptx"],
+      };
+      const updated = [...userTemplates, newTemplate];
+      setUserTemplates(updated);
+      sessionStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(updated));
+      setCategory("My Uploads");
+      toast(`"${result.name}" imported from PPTX!`, "success");
+    } catch (e) {
+      toast(e.message || "Failed to import PPTX", "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeUserTemplate = (id) => {
+    const updated = userTemplates.filter((t) => t.id !== id);
+    setUserTemplates(updated);
+    sessionStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(updated));
+  };
+
   return (
     <div className="flex flex-col gap-3">
+      {/* Search */}
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
         <input
@@ -53,6 +123,7 @@ export function TemplatesPanel() {
         />
       </div>
 
+      {/* Category pills */}
       <div className="flex gap-1.5 flex-wrap">
         {categories.map((cat) => (
           <button
@@ -70,9 +141,36 @@ export function TemplatesPanel() {
         ))}
       </div>
 
+      {/* PPTX upload button */}
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+        className="flex items-center justify-center gap-2 w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-xs font-medium text-gray-500 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 transition-all disabled:opacity-50"
+      >
+        {uploading ? (
+          <><span className="animate-spin text-purple-600">⟳</span> Importing PPTX…</>
+        ) : (
+          <><FileUp size={14} /> Import from PPTX</>
+        )}
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pptx"
+        className="hidden"
+        onChange={(e) => { handlePptxUpload(e.target.files?.[0]); e.target.value = ""; }}
+      />
+
+      {/* Template cards */}
       <div className="flex flex-col gap-3">
         {filtered.map((template) => (
-          <TemplateCard key={template.id} template={template} />
+          <TemplateCard
+            key={template.id}
+            template={template}
+            isUserTemplate={userTemplates.some((ut) => ut.id === template.id)}
+            onRemove={removeUserTemplate}
+          />
         ))}
       </div>
 
@@ -86,7 +184,7 @@ export function TemplatesPanel() {
   );
 }
 
-function TemplateCard({ template }) {
+function TemplateCard({ template, isUserTemplate, onRemove }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const setPages = useEditorStore((s) => s.setPages);
   const setCurrentPageId = useEditorStore((s) => s.setCurrentPageId);
@@ -94,20 +192,44 @@ function TemplateCard({ template }) {
   const clearSelection = useEditorStore((s) => s.clearSelection);
   const toast = useToast();
 
+  const isBlank = template.id === "blank";
+
   const applyTemplate = () => {
     const newPages = template.slides.map((slide, i) => ({
       id: uuidv4(),
       name: `Slide ${i + 1}`,
-      elements: slide.elements.map((el) => ({ ...el, id: uuidv4() })),
+      backgroundColor: null,
+      elements: (slide.elements || []).map((el) => ({ ...el, id: uuidv4() })),
     }));
 
     setPages(newPages);
     setCurrentPageId(newPages[0].id);
-    setCanvasSize(template.canvasSize);
+    setCanvasSize(template.canvasSize || { width: 1920, height: 1080, backgroundColor: "#ffffff" });
     clearSelection?.();
     toast(`"${template.name}" template loaded!`, "success");
     setShowConfirm(false);
   };
+
+  // Blank template — show as a special compact card with no preview needed
+  if (isBlank) {
+    return (
+      <div
+        className="rounded-xl border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 transition-all group cursor-pointer flex items-center gap-3 px-4 py-3"
+        onClick={applyTemplate}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && applyTemplate()}
+      >
+        <div className="w-12 h-9 bg-white border border-gray-200 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:border-purple-300">
+          <div className="w-5 h-0.5 bg-gray-200 rounded" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-gray-800 group-hover:text-purple-700">Blank</p>
+          <p className="text-[11px] text-gray-400">Start with an empty slide</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -119,22 +241,32 @@ function TemplateCard({ template }) {
     >
       <div
         className="w-full h-32 relative overflow-hidden"
-        style={{ background: template.thumbnail.bg }}
+        style={{ background: template.thumbnail?.bg || "#f1f5f9" }}
       >
         <div
           className="absolute inset-0 scale-[0.22] origin-top-left"
           style={{
-            width: template.canvasSize.width,
-            height: template.canvasSize.height,
+            width: template.canvasSize?.width || 1920,
+            height: template.canvasSize?.height || 1080,
           }}
         >
-          {template.slides[0].elements.slice(0, 12).map((el, i) => (
+          {(template.slides?.[0]?.elements || []).slice(0, 12).map((el, i) => (
             <MiniElement key={el.id || i} el={el} />
           ))}
         </div>
         <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full">
-          {template.slides.length} slides
+          {template.slides?.length || 1} slides
         </div>
+        {isUserTemplate && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onRemove?.(template.id); }}
+            className="absolute top-2 right-2 w-6 h-6 bg-black/50 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Remove"
+          >
+            <X size={12} />
+          </button>
+        )}
         <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/10 transition-colors flex items-center justify-center">
           <div className="opacity-0 group-hover:opacity-100 bg-purple-600 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg transition-all transform scale-95 group-hover:scale-100">
             Use Template
@@ -148,17 +280,14 @@ function TemplateCard({ template }) {
           <p className="text-[11px] text-gray-400">{template.category}</p>
         </div>
         <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-          {template.slides.length} slides
+          {template.slides?.length || 1} slides
         </span>
       </div>
 
       {showConfirm && (
         <div
           className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowConfirm(false);
-          }}
+          onClick={(e) => { e.stopPropagation(); setShowConfirm(false); }}
           onKeyDown={(e) => e.key === "Escape" && setShowConfirm(false)}
           role="dialog"
           aria-modal="true"
@@ -302,13 +431,67 @@ const LINE_TYPES = [
   { id: "arrow", label: "Arrow", props: DEFAULT_ELEMENT_PROPS.arrow },
 ];
 
+// ── Element catalog for search ──────────────────────────────────────────────
+const STAT_ITEMS = [
+  { subtype: "kpi", label: "KPI Card", icon: "$2.4M", keywords: ["kpi", "stat", "metric", "card", "number", "key"] },
+  { subtype: "comparison", label: "Comparison", icon: "A vs B", keywords: ["comparison", "compare", "versus", "vs"] },
+  { subtype: "progressStat", label: "Progress Bar", icon: "72%", keywords: ["progress", "bar", "percent", "gauge"] },
+  { subtype: "rankedList", label: "Ranked List", icon: "#1", keywords: ["rank", "list", "leaderboard", "top"] },
+  { subtype: "iconStat", label: "Icon + Stat", icon: "★", keywords: ["icon", "stat", "badge"] },
+];
+
+const FLOWCHART_ITEMS = [
+  "process", "decision", "terminal", "document", "database", "parallelogram", "hexagon", "cloud",
+].map((s) => ({ subtype: s, label: s.charAt(0).toUpperCase() + s.slice(1), keywords: ["flowchart", "flow", "diagram", s] }));
+
+const FRAME_ITEMS = [
+  { shape: "circle", label: "Circle Frame" },
+  { shape: "roundedRect", label: "Rounded Frame" },
+  { shape: "hexagon", label: "Hexagon Frame" },
+  { shape: "diamond", label: "Diamond Frame" },
+  { shape: "triangle", label: "Triangle Frame" },
+].map((f) => ({ ...f, keywords: ["frame", "mask", f.label.toLowerCase()] }));
+
+const TIMELINE_ITEMS = [
+  { subtype: "horizontal", label: "Horizontal Timeline", icon: "—", keywords: ["timeline", "horizontal", "steps", "roadmap"] },
+  { subtype: "vertical", label: "Vertical Roadmap", icon: "|", keywords: ["timeline", "vertical", "roadmap", "milestones"] },
+  { subtype: "steps", label: "Numbered Steps", icon: "1→2", keywords: ["steps", "numbered", "process", "sequence"] },
+];
+
+const CALLOUT_ITEMS = ["bottom-left", "bottom-right", "top-left", "top-right", "left", "right"].map((d) => ({
+  dir: d, label: d.replace("-", " "), keywords: ["callout", "bubble", "speech", "tooltip", d],
+}));
+
+const LINE_ITEMS = LINE_TYPES.map((l) => ({ ...l, keywords: ["line", "arrow", l.label.toLowerCase()] }));
+
+const GRADIENT_ITEMS = GRADIENT_PRESETS.map((g) => ({ ...g, keywords: ["gradient", "color", g.name.toLowerCase()] }));
+
+function matches(keywords, q) {
+  return !q || keywords.some((kw) => kw.includes(q));
+}
+
 export function ElementsPanel() {
   const [search, setSearch] = useState("");
   const addElement = useEditorStore((s) => s.addElement);
+  const q = search.toLowerCase().trim();
 
-  const filteredShapes = SHAPES.filter((s) =>
-    s.label.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredStats = STAT_ITEMS.filter((i) => matches([i.label.toLowerCase(), ...i.keywords], q));
+  const filteredFlowchart = FLOWCHART_ITEMS.filter((i) => matches([i.label.toLowerCase(), ...i.keywords], q));
+  const filteredFrames = FRAME_ITEMS.filter((i) => matches([i.label.toLowerCase(), ...i.keywords], q));
+  const filteredTimelines = TIMELINE_ITEMS.filter((i) => matches([i.label.toLowerCase(), ...i.keywords], q));
+  const filteredCallouts = CALLOUT_ITEMS.filter((i) => matches([i.label.toLowerCase(), ...i.keywords], q));
+  const filteredShapes = SHAPES.filter((s) => matches([s.label.toLowerCase(), "shape", s.type], q));
+  const filteredLines = LINE_ITEMS.filter((i) => matches([i.label.toLowerCase(), ...i.keywords], q));
+  const filteredGradients = GRADIENT_ITEMS.filter((i) => matches([i.name.toLowerCase(), ...i.keywords], q));
+
+  const totalResults = filteredStats.length + filteredFlowchart.length + filteredFrames.length +
+    filteredTimelines.length + filteredCallouts.length + filteredShapes.length +
+    filteredLines.length + filteredGradients.length;
+
+  const SectionHead = ({ title, count }) =>
+    (!q || count > 0) ? (
+      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 mt-1">{title}</p>
+    ) : null;
 
   return (
     <>
@@ -316,223 +499,200 @@ export function ElementsPanel() {
         <Search className="absolute left-6 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
         <input
           type="text"
-          placeholder="Search elements"
+          placeholder="Search elements…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-full text-sm"
+          className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-purple-400"
         />
       </div>
+
+      {q && totalResults === 0 && (
+        <div className="flex flex-col items-center justify-center py-10 text-gray-400 px-3">
+          <Search className="w-8 h-8 mb-2 opacity-30" />
+          <p className="text-xs">No elements found for "{search}"</p>
+        </div>
+      )}
+
       <div className="px-3 py-2 flex-1 overflow-y-auto scrollbar-hide">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-          Infographic Stats
-        </p>
-        <div className="flex flex-col gap-2 mb-6">
-          {[
-            { subtype: "kpi", label: "KPI Card", width: 220, height: 130 },
-            { subtype: "comparison", label: "Comparison", width: 340, height: 120 },
-            { subtype: "progressStat", label: "Progress Bar", width: 280, height: 100 },
-            { subtype: "rankedList", label: "Ranked List", width: 300, height: 200 },
-            { subtype: "iconStat", label: "Icon + Stat", width: 180, height: 160 },
-          ].map((preset) => (
-            <button
-              key={preset.subtype}
-              type="button"
-              onClick={() => {
-                const defaults = STAT_BLOCK_DEFAULTS[preset.subtype];
-                if (defaults) addElement({ ...defaults });
-              }}
-              className="flex items-center gap-2 w-full px-3 py-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left"
-            >
-              <div className="w-10 h-8 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-[10px] font-bold flex-shrink-0">
-                {preset.subtype === "kpi" && "$2.4M"}
-                {preset.subtype === "comparison" && "A vs B"}
-                {preset.subtype === "progressStat" && "72%"}
-                {preset.subtype === "rankedList" && "#1"}
-                {preset.subtype === "iconStat" && "★"}
-              </div>
-              <span className="text-xs font-medium text-gray-700">{preset.label}</span>
-            </button>
-          ))}
-        </div>
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-          Flowchart
-        </p>
-        <div className="grid grid-cols-4 gap-2 mb-6">
-          {["process", "decision", "terminal", "document", "database", "parallelogram", "hexagon", "cloud"].map((subtype) => (
-            <button
-              key={subtype}
-              type="button"
-              onClick={() => {
-                const defaults = FLOWCHART_DEFAULTS[subtype];
-                if (defaults) addElement({ ...defaults });
-              }}
-              className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
-              title={subtype}
-            >
-              <div className="w-8 h-6 rounded bg-purple-300/60 border border-purple-500" />
-              <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{subtype}</span>
-            </button>
-          ))}
-        </div>
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-          Frames
-        </p>
-        <div className="grid grid-cols-5 gap-2 mb-6">
-          {["circle", "roundedRect", "hexagon", "diamond", "triangle"].map((shape) => (
-            <button
-              key={shape}
-              type="button"
-              onClick={() => {
-                const defaults = FRAME_DEFAULTS[shape];
-                if (defaults) addElement({ ...defaults });
-              }}
-              className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
-              title={shape}
-            >
-              <div className="w-8 h-8 rounded-full bg-purple-300/50 border-2 border-purple-500" style={shape === "roundedRect" ? { borderRadius: 6 } : shape === "hexagon" || shape === "diamond" ? { transform: "rotate(45deg)", borderRadius: 2 } : shape === "triangle" ? { clipPath: "polygon(50% 0, 100% 100%, 0 100%)", borderRadius: 0 } : {}} />
-              <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{shape}</span>
-            </button>
-          ))}
-        </div>
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-          Timelines
-        </p>
-        <div className="flex flex-col gap-2 mb-6">
-          {[
-            { subtype: "horizontal", label: "Horizontal Timeline" },
-            { subtype: "vertical", label: "Vertical Roadmap" },
-            { subtype: "steps", label: "Numbered Steps" },
-          ].map((preset) => (
-            <button
-              key={preset.subtype}
-              type="button"
-              onClick={() => {
-                const defaults = TIMELINE_DEFAULTS[preset.subtype];
-                if (defaults) addElement({ ...defaults });
-              }}
-              className="flex items-center gap-2 w-full px-3 py-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left"
-            >
-              <div className="w-10 h-8 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-[10px] font-bold flex-shrink-0">
-                {preset.subtype === "horizontal" && "—"}
-                {preset.subtype === "vertical" && "|"}
-                {preset.subtype === "steps" && "1→2"}
-              </div>
-              <span className="text-xs font-medium text-gray-700">{preset.label}</span>
-            </button>
-          ))}
-        </div>
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-          Callouts
-        </p>
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          {["bottom-left", "bottom-right", "top-left", "top-right", "left", "right"].map((tailDir) => (
-            <button
-              key={tailDir}
-              type="button"
-              onClick={() => {
-                const defaults = CALLOUT_DEFAULTS[tailDir];
-                if (defaults) addElement({ ...defaults });
-              }}
-              className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
-              title={tailDir}
-            >
-              <div className="w-10 h-7 rounded bg-purple-500 flex items-center justify-center text-white text-[10px] font-bold">
-                💬
-              </div>
-              <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{tailDir.replace("-", " ")}</span>
-            </button>
-          ))}
-        </div>
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-          Shapes
-        </p>
-        <div className="grid grid-cols-4 gap-2 mb-6">
-          {filteredShapes.map(({ id, label, type }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() =>
-                addElement({ ...DEFAULT_ELEMENT_PROPS[type] || DEFAULT_ELEMENT_PROPS.rect })
-              }
-              className="w-14 h-14 rounded-lg bg-gray-100 hover:bg-gray-200 flex flex-col items-center justify-center gap-1"
-            >
-              <svg viewBox="0 0 56 56" className="w-8 h-8">
-                {SHAPE_SVGS[type] || SHAPE_SVGS.rect}
-              </svg>
-              <span className="text-[10px] font-medium text-gray-600 truncate w-full text-center">
-                {label}
-              </span>
-            </button>
-          ))}
-        </div>
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-          Lines
-        </p>
-        <div className="grid grid-cols-4 gap-2 mb-6">
-          {LINE_TYPES.map(({ id, label, props }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => addElement({ ...props })}
-              className="w-14 h-14 rounded-lg bg-gray-100 hover:bg-gray-200 flex flex-col items-center justify-center gap-1"
-            >
-              <svg viewBox="0 0 56 56" className="w-8 h-8">
-                {id === "arrow" ? (
-                  <path
-                    d="M8,24 L36,24 L36,16 L50,28 L36,40 L36,32 L8,32 Z"
-                    fill="#7c3aed"
-                  />
-                ) : (
-                  <line
-                    x1={8}
-                    y1={28}
-                    x2={48}
-                    y2={28}
-                    stroke="#7c3aed"
-                    strokeWidth={3}
-                    strokeDasharray={props.dash?.join(" ") || "none"}
-                  />
-                )}
-              </svg>
-              <span className="text-[10px] font-medium text-gray-600 truncate w-full text-center">
-                {label}
-              </span>
-            </button>
-          ))}
-        </div>
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-          Gradients
-        </p>
-        <div className="grid grid-cols-3 gap-2">
-          {GRADIENT_PRESETS.map(({ name, colors }) => (
-            <button
-              key={name}
-              type="button"
-              onClick={() =>
-                addElement({
-                  type: "rect",
-                  x: 100,
-                  y: 100,
-                  width: 300,
-                  height: 200,
-                  fillLinearGradientStartPoint: { x: 0, y: 0 },
-                  fillLinearGradientEndPoint: { x: 300, y: 200 },
-                  fillLinearGradientColorStops: [0, colors[0], 1, colors[1]],
-                  opacity: 1,
-                  rotation: 0,
-                })
-              }
-              className="aspect-video rounded-lg border border-gray-200 overflow-hidden"
-              style={{
-                background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`,
-              }}
-            >
-              <span className="text-[10px] font-medium text-white/90 drop-shadow">
-                {name}
-              </span>
-            </button>
-          ))}
-        </div>
+        {/* ─── Infographic Stats ─── */}
+        {filteredStats.length > 0 && (
+          <>
+            <SectionHead title="Infographic Stats" count={filteredStats.length} />
+            <div className="flex flex-col gap-2 mb-6">
+              {filteredStats.map((preset) => (
+                <button
+                  key={preset.subtype}
+                  type="button"
+                  onClick={() => { const d = STAT_BLOCK_DEFAULTS[preset.subtype]; if (d) addElement({ ...d }); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left"
+                >
+                  <div className="w-10 h-8 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-[10px] font-bold flex-shrink-0">
+                    {preset.icon}
+                  </div>
+                  <span className="text-xs font-medium text-gray-700">{preset.label}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ─── Flowchart ─── */}
+        {filteredFlowchart.length > 0 && (
+          <>
+            <SectionHead title="Flowchart" count={filteredFlowchart.length} />
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {filteredFlowchart.map(({ subtype, label }) => (
+                <button
+                  key={subtype}
+                  type="button"
+                  onClick={() => { const d = FLOWCHART_DEFAULTS[subtype]; if (d) addElement({ ...d }); }}
+                  className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
+                  title={label}
+                >
+                  <div className="w-8 h-6 rounded bg-purple-300/60 border border-purple-500" />
+                  <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{subtype}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ─── Frames ─── */}
+        {filteredFrames.length > 0 && (
+          <>
+            <SectionHead title="Frames" count={filteredFrames.length} />
+            <div className="grid grid-cols-5 gap-2 mb-6">
+              {filteredFrames.map(({ shape, label }) => (
+                <button
+                  key={shape}
+                  type="button"
+                  onClick={() => { const d = FRAME_DEFAULTS[shape]; if (d) addElement({ ...d }); }}
+                  className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
+                  title={label}
+                >
+                  <div className="w-8 h-8 rounded-full bg-purple-300/50 border-2 border-purple-500"
+                    style={shape === "roundedRect" ? { borderRadius: 6 } : shape === "hexagon" || shape === "diamond" ? { transform: "rotate(45deg)", borderRadius: 2 } : shape === "triangle" ? { clipPath: "polygon(50% 0, 100% 100%, 0 100%)", borderRadius: 0 } : {}} />
+                  <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{shape}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ─── Timelines ─── */}
+        {filteredTimelines.length > 0 && (
+          <>
+            <SectionHead title="Timelines" count={filteredTimelines.length} />
+            <div className="flex flex-col gap-2 mb-6">
+              {filteredTimelines.map((preset) => (
+                <button
+                  key={preset.subtype}
+                  type="button"
+                  onClick={() => { const d = TIMELINE_DEFAULTS[preset.subtype]; if (d) addElement({ ...d }); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left"
+                >
+                  <div className="w-10 h-8 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-[10px] font-bold flex-shrink-0">
+                    {preset.icon}
+                  </div>
+                  <span className="text-xs font-medium text-gray-700">{preset.label}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ─── Callouts ─── */}
+        {filteredCallouts.length > 0 && (
+          <>
+            <SectionHead title="Callouts" count={filteredCallouts.length} />
+            <div className="grid grid-cols-3 gap-2 mb-6">
+              {filteredCallouts.map(({ dir, label }) => (
+                <button
+                  key={dir}
+                  type="button"
+                  onClick={() => { const d = CALLOUT_DEFAULTS[dir]; if (d) addElement({ ...d }); }}
+                  className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
+                  title={label}
+                >
+                  <div className="w-10 h-7 rounded bg-purple-500 flex items-center justify-center text-white text-[10px] font-bold">💬</div>
+                  <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{label}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ─── Shapes ─── */}
+        {filteredShapes.length > 0 && (
+          <>
+            <SectionHead title="Shapes" count={filteredShapes.length} />
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {filteredShapes.map(({ id, label, type }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => addElement({ ...DEFAULT_ELEMENT_PROPS[type] || DEFAULT_ELEMENT_PROPS.rect })}
+                  className="w-14 h-14 rounded-lg bg-gray-100 hover:bg-gray-200 flex flex-col items-center justify-center gap-1"
+                >
+                  <svg viewBox="0 0 56 56" className="w-8 h-8">{SHAPE_SVGS[type] || SHAPE_SVGS.rect}</svg>
+                  <span className="text-[10px] font-medium text-gray-600 truncate w-full text-center">{label}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ─── Lines ─── */}
+        {filteredLines.length > 0 && (
+          <>
+            <SectionHead title="Lines" count={filteredLines.length} />
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {filteredLines.map(({ id, label, props }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => addElement({ ...props })}
+                  className="w-14 h-14 rounded-lg bg-gray-100 hover:bg-gray-200 flex flex-col items-center justify-center gap-1"
+                >
+                  <svg viewBox="0 0 56 56" className="w-8 h-8">
+                    {id === "arrow" ? (
+                      <path d="M8,24 L36,24 L36,16 L50,28 L36,40 L36,32 L8,32 Z" fill="#7c3aed" />
+                    ) : (
+                      <line x1={8} y1={28} x2={48} y2={28} stroke="#7c3aed" strokeWidth={3} strokeDasharray={props.dash?.join(" ") || "none"} />
+                    )}
+                  </svg>
+                  <span className="text-[10px] font-medium text-gray-600 truncate w-full text-center">{label}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ─── Gradients ─── */}
+        {filteredGradients.length > 0 && (
+          <>
+            <SectionHead title="Gradients" count={filteredGradients.length} />
+            <div className="grid grid-cols-3 gap-2">
+              {filteredGradients.map(({ name, colors }) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => addElement({
+                    type: "rect", x: 100, y: 100, width: 300, height: 200,
+                    fillLinearGradientStartPoint: { x: 0, y: 0 },
+                    fillLinearGradientEndPoint: { x: 300, y: 200 },
+                    fillLinearGradientColorStops: [0, colors[0], 1, colors[1]],
+                    opacity: 1, rotation: 0,
+                  })}
+                  className="aspect-video rounded-lg border border-gray-200 overflow-hidden"
+                  style={{ background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})` }}
+                >
+                  <span className="text-[10px] font-medium text-white/90 drop-shadow">{name}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </>
   );
@@ -724,9 +884,17 @@ export function UploadsPanel() {
   const toast = useToast();
 
   useEffect(() => {
-    getAllImages()
+    listImages()
       .then((imgs) =>
-        setUploads(imgs.sort((a, b) => b.savedAt - a.savedAt))
+        setUploads(
+          imgs.map((i) => ({
+            id: i.id,
+            src: i.url,
+            name: i.name,
+            type: i.type,
+            savedAt: i.created_at ? new Date(i.created_at).getTime() : 0,
+          })).sort((a, b) => b.savedAt - a.savedAt)
+        )
       )
       .catch(() => setError("Failed to load uploads"));
   }, []);
@@ -743,13 +911,11 @@ export function UploadsPanel() {
     setError(null);
     setLoading(true);
     try {
-      const { src } = await compressImage(file);
-      const id = uuidv4();
-      await saveImage(id, src, file.name, file.type);
+      const result = await uploadImage(file);
       const newUpload = {
-        id,
-        src,
-        name: file.name,
+        id: result.id,
+        src: result.url,
+        name: result.name || file.name,
         type: file.type,
         savedAt: Date.now(),
       };
@@ -786,8 +952,12 @@ export function UploadsPanel() {
   const handleDragLeave = () => setDragging(false);
 
   const handleDelete = async (id) => {
-    await deleteImage(id);
-    setUploads((prev) => prev.filter((u) => u.id !== id));
+    try {
+      await deleteImage(id);
+      setUploads((prev) => prev.filter((u) => u.id !== id));
+    } catch (e) {
+      console.error("Delete failed", e);
+    }
   };
 
   const handleAddToCanvas = (upload) => {
@@ -902,14 +1072,14 @@ export function UploadsPanel() {
       <StockPhotosSection
         addElement={addElement}
         compressImage={compressImage}
-        saveImage={saveImage}
+        uploadImage={uploadImage}
         toast={toast}
       />
     </div>
   );
 }
 
-function StockPhotosSection({ addElement, compressImage, saveImage, toast }) {
+function StockPhotosSection({ addElement, compressImage, uploadImage, toast }) {
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState("");
   const [photos, setPhotos] = useState([]);
@@ -950,12 +1120,14 @@ function StockPhotosSection({ addElement, compressImage, saveImage, toast }) {
       const blob = await resp.blob();
       const file = new File([blob], "stock.jpg", { type: blob.type || "image/jpeg" });
       const { src } = await compressImage(file);
-      const id = uuidv4();
-      await saveImage(id, src, "stock-photo.jpg", file.type);
+      const res = await fetch(src);
+      const b = await res.blob();
+      const fileToUpload = new File([b], "stock-photo.jpg", { type: b.type || "image/jpeg" });
+      const result = await uploadImage(fileToUpload);
       addElement({
         type: "image",
-        src,
-        imageId: id,
+        src: result.url,
+        imageId: result.id,
         x: 80,
         y: 80,
         width: 400,
@@ -1040,31 +1212,51 @@ function StockPhotosSection({ addElement, compressImage, saveImage, toast }) {
 export function ProjectsPanel() {
   const [projects, setProjects] = useState([]);
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
   const toast = useToast();
   const { saveProject, loadProject } = useEditorStore();
 
   useEffect(() => {
-    const stored = localStorage.getItem("canva_projects");
-    if (stored) setProjects(JSON.parse(stored));
+    import("../api/projects")
+      .then(({ listProjects }) => listProjects())
+      .then((list) => setProjects(list || []))
+      .catch(() => setProjects([]));
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) return;
-    const project = saveProject(name.trim());
-    setProjects((prev) => [project, ...prev]);
-    setName("");
-    toast("Project saved!", "success");
+    setLoading(true);
+    try {
+      const project = await saveProject(name.trim());
+      setProjects((prev) => [{ id: project.id, name: project.name, updated_at: project.savedAt }, ...prev]);
+      setName("");
+      toast("Project saved!", "success");
+    } catch (e) {
+      toast("Failed to save project", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLoad = async (project) => {
-    await loadProject(project);
-    toast("Project loaded!", "success");
+    try {
+      const { getProject } = await import("../api/projects");
+      const full = await getProject(project.id);
+      await loadProject(full);
+      toast("Project loaded!", "success");
+    } catch (e) {
+      toast("Failed to load project", "error");
+    }
   };
 
-  const handleDelete = (id) => {
-    const next = projects.filter((p) => p.id !== id);
-    setProjects(next);
-    localStorage.setItem("canva_projects", JSON.stringify(next));
+  const handleDelete = async (id) => {
+    try {
+      const { deleteProject } = await import("../api/projects");
+      await deleteProject(id);
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) {
+      toast("Failed to delete project", "error");
+    }
   };
 
   return (
@@ -1080,9 +1272,10 @@ export function ProjectsPanel() {
         <button
           type="button"
           onClick={handleSave}
-          className="px-4 py-2 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600"
+          disabled={loading}
+          className="px-4 py-2 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 disabled:opacity-50"
         >
-          Save Project
+          {loading ? "Saving..." : "Save Project"}
         </button>
       </div>
       <div className="flex items-center justify-between mb-3">
@@ -1091,9 +1284,13 @@ export function ProjectsPanel() {
         </p>
         <button
           type="button"
-          onClick={() => {
-            localStorage.removeItem("canva_onboarding_done");
-            window.location.reload();
+          onClick={async () => {
+            try {
+              await import("../api/client").then((m) => m.apiFetch("/api/settings/onboarding", { method: "DELETE" }));
+              window.location.reload();
+            } catch {
+              window.location.reload();
+            }
           }}
           className="text-xs text-gray-400 hover:text-gray-600"
         >
@@ -1111,7 +1308,7 @@ export function ProjectsPanel() {
             >
               <p className="font-bold text-gray-900">{project.name}</p>
               <p className="text-xs text-gray-500 mt-1">
-                {new Date(project.savedAt).toLocaleString()}
+                {new Date(project.updated_at || project.savedAt).toLocaleString()}
               </p>
               <div className="flex gap-2 mt-2">
                 <button
@@ -1268,7 +1465,7 @@ export function ChartsPanel() {
             <div className="grid grid-cols-2 gap-2">
               {category.charts.map((chart) => (
                 <ChartPreviewCard
-                  key={chart.id}
+                  key={chart.iconId}
                   chart={chart}
                   onAdd={() => handleAdd(chart)}
                 />

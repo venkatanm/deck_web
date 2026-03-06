@@ -1,16 +1,16 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_CANVAS_SIZE } from '../utils/defaults';
-import { getAllImages } from '../utils/imageStorage';
 import { debounce } from '../utils/debounce';
 
 const MAX_HISTORY = 50;
 
 // Clone pages for undo - strip image src to avoid cloning megabytes
 function clonePagesForHistory(pages) {
+  if (!pages || !Array.isArray(pages)) return [];
   return pages.map((p) => ({
     ...p,
-    elements: p.elements.map((el) => {
+    elements: (p.elements || []).map((el) => {
       if (el.type === 'image' && el.src) {
         return { ...el, src: null };
       }
@@ -21,20 +21,16 @@ function clonePagesForHistory(pages) {
 
 const clonePages = (pages) => JSON.parse(JSON.stringify(pages));
 
-const debouncedSaveBrandKit = debounce((kit) => {
+const debouncedSaveBrandKit = debounce(async (kit) => {
   try {
-    localStorage.setItem('brand_kit', JSON.stringify(kit));
+    const { saveBrandKit } = await import('../api/brandKit');
+    await saveBrandKit({
+      colors: kit.colors || [],
+      fonts: kit.fonts || [],
+      logo_urls: [{ logos: kit.logos || [], brandIcons: kit.brandIcons || [] }],
+    });
   } catch (e) {
-    try {
-      const kitToSave = {
-        ...kit,
-        logos: (kit.logos || []).map((l) => ({ ...l, src: undefined })),
-        brandIcons: (kit.brandIcons || []).map((i) => ({ ...i, src: undefined })),
-      };
-      localStorage.setItem('brand_kit', JSON.stringify(kitToSave));
-    } catch (e2) {
-      console.warn('Brand kit too large for localStorage', e2);
-    }
+    console.warn('Brand kit save failed', e);
   }
 }, 2000);
 
@@ -102,12 +98,12 @@ const useEditorStore = create((set, get) => ({
   // ── Selectors ──────────────────────────────
   getCurrentElements: () => {
     const { pages, currentPageId } = get();
-    return pages.find(p => p.id === currentPageId)?.elements || [];
+    return (pages || []).find(p => p.id === currentPageId)?.elements || [];
   },
 
   getSelectedElement: () => {
     const { pages, currentPageId, selectedId } = get();
-    const elements = pages.find(p => p.id === currentPageId)?.elements || [];
+    const elements = (pages || []).find(p => p.id === currentPageId)?.elements || [];
     return elements.find(e => e.id === selectedId) || null;
   },
 
@@ -145,7 +141,11 @@ const useEditorStore = create((set, get) => ({
       selectedId: newIds.length === 1 ? newIds[0] : null,
     });
   },
-  clearSelection: () => set({ selectedIds: [], selectedId: null }),
+  clearSelection: () => {
+    const { selectedIds, selectedId } = get();
+    if (!selectedIds.length && !selectedId) return;
+    set({ selectedIds: [], selectedId: null });
+  },
   deleteSelected: () => {
     const { selectedIds } = get();
     if (!selectedIds.length) return;
@@ -166,7 +166,8 @@ const useEditorStore = create((set, get) => ({
     if (selectedIds.length < 2) return;
     get()._snapshot(true);
 
-    const page = pages.find(p => p.id === currentPageId);
+    const page = (pages || []).find(p => p.id === currentPageId);
+    if (!page) return;
     const selected = page.elements.filter(e => selectedIds.includes(e.id));
 
     const minX = Math.min(...selected.map(e => e.x));
@@ -210,7 +211,8 @@ const useEditorStore = create((set, get) => ({
     if (!selectedId) return;
     get()._snapshot();
 
-    const page = pages.find(p => p.id === currentPageId);
+    const page = (pages || []).find(p => p.id === currentPageId);
+    if (!page) return;
     const groupEl = page.elements.find(e => e.id === selectedId);
     if (!groupEl || groupEl.type !== 'group') return;
 
@@ -242,7 +244,8 @@ const useEditorStore = create((set, get) => ({
     if (!selectedIds.length) return;
     get()._snapshot();
 
-    const page = pages.find(p => p.id === currentPageId);
+    const page = (pages || []).find(p => p.id === currentPageId);
+    if (!page) return;
     const selected = page.elements.filter(e => selectedIds.includes(e.id));
     const copies = selected.map(el => ({
       ...JSON.parse(JSON.stringify(el)),
@@ -289,7 +292,7 @@ const useEditorStore = create((set, get) => ({
     set({
       pages: pages.map(p =>
         p.id === currentPageId
-          ? { ...p, elements: [...p.elements, newElement] }
+          ? { ...p, elements: [...(Array.isArray(p.elements) ? p.elements : []), newElement] }
           : p
       ),
       selectedId: newElement.id,
@@ -325,7 +328,7 @@ const useEditorStore = create((set, get) => ({
 
   duplicateElement: (id) => {
     const { pages, currentPageId } = get();
-    const elements = pages.find(p => p.id === currentPageId)?.elements || [];
+    const elements = (pages || []).find(p => p.id === currentPageId)?.elements || [];
     const el = elements.find(e => e.id === id);
     if (!el) return;
     get().addElement({ ...JSON.parse(JSON.stringify(el)), x: el.x + 20, y: el.y + 20 });
@@ -396,7 +399,7 @@ const useEditorStore = create((set, get) => ({
   // ── Copy/paste element ─────────────────────
   copyElement: (id) => {
     const { pages, currentPageId } = get();
-    const elements = pages.find(p => p.id === currentPageId)?.elements || [];
+    const elements = (pages || []).find(p => p.id === currentPageId)?.elements || [];
     const el = elements.find(e => e.id === id);
     if (el) set({ clipboardElement: JSON.parse(JSON.stringify(el)) });
   },
@@ -458,7 +461,7 @@ const useEditorStore = create((set, get) => ({
   setLastSaved: (ts) => set({ lastSaved: ts }),
   applyCrop: (id, cropRect) => {
     const { pages, currentPageId } = get();
-    const page = pages.find(p => p.id === currentPageId);
+    const page = (pages || []).find(p => p.id === currentPageId);
     const el = page?.elements.find(e => e.id === id);
     if (!el) return;
     get().updateElement(id, {
@@ -477,19 +480,47 @@ const useEditorStore = create((set, get) => ({
   // ── Pages ──────────────────────────────────
   addPage: (page) => {
     const { pages } = get();
-    if (page) {
-      set({ pages: [...pages, page] });
+    const pagesList = pages || [];
+
+    // Guard: ignore if called with a non-page
+    // argument such as a DOM event object.
+    // A valid page must be a plain object with
+    // an id string and an elements array.
+    const isValidPage = (p) =>
+      p &&
+      typeof p === 'object' &&
+      typeof p.id === 'string' &&
+      Array.isArray(p.elements);
+
+    if (isValidPage(page)) {
+      // Called with a real page object (e.g. from
+      // a programmatic page-insert flow). Add it
+      // and switch to it.
+      set({
+        pages: [...pagesList, page],
+        currentPageId: page.id,
+        selectedId: null,
+        selectedIds: [],
+      });
     } else {
+      // Called with no argument or an event object.
+      // Create a blank page and switch to it.
       const newPage = { id: uuidv4(), elements: [] };
-      set({ pages: [...pages, newPage], currentPageId: newPage.id, selectedId: null, selectedIds: [] });
+      set({
+        pages: [...pagesList, newPage],
+        currentPageId: newPage.id,
+        selectedId: null,
+        selectedIds: [],
+      });
     }
   },
 
   deletePage: (id) => {
     const { pages, currentPageId } = get();
-    if (pages.length === 1) return;
-    const idx = pages.findIndex(p => p.id === id);
-    const newPages = pages.filter(p => p.id !== id);
+    const pagesList = pages || [];
+    if (pagesList.length === 1) return;
+    const idx = pagesList.findIndex(p => p.id === id);
+    const newPages = pagesList.filter(p => p.id !== id);
     const newCurrentId = currentPageId === id
       ? (newPages[Math.min(idx, newPages.length - 1)]?.id ?? newPages[0].id)
       : currentPageId;
@@ -498,15 +529,47 @@ const useEditorStore = create((set, get) => ({
 
   setCurrentPage: (id) => set({ currentPageId: id, selectedId: null, selectedIds: [] }),
   setCurrentPageId: (id) => set({ currentPageId: id, selectedId: null, selectedIds: [] }),
-  setPages: (pages) => set({ pages }),
+  setPages: (pages) =>
+    set({
+      pages: Array.isArray(pages) ? pages : [],
+      selectedId: null,
+      selectedIds: [],
+      history: [],
+      future: [],
+    }),
+  // Update all pages without clearing undo history (use after _snapshot)
+  patchAllPages: (updaterFn) => {
+    const { pages } = get();
+    set({ pages: updaterFn(Array.isArray(pages) ? pages : []) });
+  },
   updatePage: (pageId, updates) => {
     const { pages } = get();
+    const pagesList = pages || [];
     set({
-      pages: pages.map(p => (p.id === pageId ? { ...p, ...updates } : p)),
+      pages: pagesList.map(p => (p.id === pageId ? { ...p, ...updates } : p)),
     });
   },
 
   setTitle: (title) => set({ title }),
+
+  // ── New design (reset editor state) ──────────
+  newDesign: () => {
+    const firstPageId = uuidv4();
+    set({
+      pages: [{ id: firstPageId, elements: [], backgroundColor: null }],
+      currentPageId: firstPageId,
+      selectedId: null,
+      selectedIds: [],
+      canvasSize: { ...DEFAULT_CANVAS_SIZE },
+      title: 'Untitled Design',
+      history: [],
+      future: [],
+      projectId: null,
+    });
+  },
+
+  projectId: null,
+  setProjectId: (id) => set({ projectId: id }),
 
   // ── Brand Kit ─────────────────────────────────
   brandKit: {
@@ -524,13 +587,21 @@ const useEditorStore = create((set, get) => ({
     debouncedSaveBrandKit(newKit);
   },
 
-  loadBrandKit: () => {
+  loadBrandKit: async () => {
     try {
-      const saved = localStorage.getItem('brand_kit');
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const { getBrandKit } = await import('../api/brandKit');
+      const saved = await getBrandKit();
+      if (saved && (saved.colors?.length || saved.fonts?.length || saved.logo_urls?.length)) {
+        const logoData = saved.logo_urls?.[0] || {};
+        const parsed = {
+          name: 'My Brand',
+          colors: saved.colors || [],
+          fonts: saved.fonts || [],
+          logos: logoData.logos || [],
+          brandIcons: logoData.brandIcons || [],
+          corporateTemplate: null,
+        };
         set({ brandKit: parsed });
-        // Re-register brand fonts (url may be data URL or ArrayBuffer)
         (parsed.fonts || []).forEach((f) => {
           if (f.url) {
             const source =
@@ -619,9 +690,8 @@ const useEditorStore = create((set, get) => ({
   setPresentPageIndex: (i) => set({ presentPageIndex: i }),
 
   // ── Project save/load ──────────────────────
-  saveProject: (name) => {
+  saveProject: async (name) => {
     const { pages, canvasSize } = get();
-    const projects = JSON.parse(localStorage.getItem('canva_projects') || '[]');
     const pagesToSave = clonePages(pages).map(p => ({
       ...p,
       elements: p.elements.map(el =>
@@ -630,23 +700,31 @@ const useEditorStore = create((set, get) => ({
           : el
       ),
     }));
-    const project = { id: uuidv4(), name, pages: pagesToSave, canvasSize, savedAt: new Date().toISOString() };
-    localStorage.setItem('canva_projects', JSON.stringify([...projects, project]));
-    return project;
+    const { createProject } = await import('../api/projects');
+    const { id } = await createProject({
+      name: name || 'Untitled Design',
+      canvas_size: canvasSize,
+      pages: pagesToSave,
+      thumbnail_url: null,
+    });
+    return { id, name: name || 'Untitled Design', savedAt: new Date().toISOString() };
   },
 
   loadProject: async (project) => {
-    const allImages = await getAllImages();
-    const imageMap = Object.fromEntries(allImages.map(i => [i.id, i.src]));
-    const resolvedPages = project.pages.map(p => ({
+    const { listImages } = await import('../api/images');
+    const allImages = await listImages();
+    const imageMap = Object.fromEntries(allImages.map(i => [i.id, i.url]));
+    const pages = project.pages || [];
+    const resolvedPages = pages.map(p => ({
       ...p,
-      elements: p.elements.map(el =>
+      elements: (p.elements || []).map(el =>
         el.type === 'image' && el.imageId
           ? { ...el, src: imageMap[el.imageId] || '' }
           : el
       ),
     }));
-    set({ pages: resolvedPages, canvasSize: project.canvasSize, currentPageId: project.pages[0].id, selectedId: null, selectedIds: [], history: [], future: [], title: project.name || 'Untitled Design' });
+    const canvasSize = project.canvas_size || project.canvasSize;
+    set({ pages: resolvedPages, canvasSize: canvasSize || get().canvasSize, currentPageId: pages[0]?.id || get().currentPageId, selectedId: null, selectedIds: [], history: [], future: [], title: project.name || 'Untitled Design' });
   },
 }));
 

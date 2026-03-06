@@ -16,7 +16,7 @@ import { Plus } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
 import { usePageThumbnail } from "../hooks/usePageThumbnail";
 
-function SortablePageThumb({ page, index, isActive }) {
+function SortablePageThumb({ page, index, isActive, stableId }) {
   const {
     attributes,
     listeners,
@@ -24,7 +24,7 @@ function SortablePageThumb({ page, index, isActive }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: page.id });
+  } = useSortable({ id: stableId });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -187,9 +187,14 @@ export default function PagesPanel() {
     const { active, over } = event;
     if (!active || !over || active.id === over.id) return;
 
-    const oldIndex = pages.findIndex((p) => p.id === active.id);
-    const newIndex = pages.findIndex((p) => p.id === over.id);
-    if (oldIndex !== -1 && newIndex !== -1) {
+    // SortableContext uses page-0, page-1, ... as ids
+    const parseIndex = (id) => {
+      const m = String(id).match(/^page-(\d+)$/);
+      return m ? parseInt(m[1], 10) : -1;
+    };
+    const oldIndex = parseIndex(active.id);
+    const newIndex = parseIndex(over.id);
+    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
       reorderPages(oldIndex, newIndex);
     }
   };
@@ -202,16 +207,17 @@ export default function PagesPanel() {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={pages.map((p) => p.id)}
+          items={(pages || []).map((_, i) => `page-${i}`)}
           strategy={horizontalListSortingStrategy}
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            {pages.map((page, index) => (
+            {(pages || []).filter(Boolean).map((page, index) => (
               <SortablePageThumb
-                key={page.id}
+                key={`page-${index}`}
                 page={page}
                 index={index}
                 isActive={page.id === currentPageId}
+                stableId={`page-${index}`}
               />
             ))}
           </div>

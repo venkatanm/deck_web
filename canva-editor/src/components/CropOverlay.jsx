@@ -9,8 +9,8 @@ export default function CropOverlay() {
   const currentPageId = useEditorStore((s) => s.currentPageId);
   const zoom = useEditorStore((s) => s.zoom);
 
-  const page = pages.find((p) => p.id === currentPageId);
-  const el = page?.elements.find((e) => e.id === croppingId);
+  const page = (pages || []).find((p) => p.id === currentPageId);
+  const el = (page?.elements || []).find((e) => e.id === croppingId);
 
   const [crop, setCrop] = useState(null);
 

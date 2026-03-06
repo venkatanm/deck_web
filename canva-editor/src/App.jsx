@@ -40,31 +40,56 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem("canva_autosave");
-    if (stored) {
+    const loadAutosave = async () => {
       try {
-        const data = JSON.parse(stored);
-        const hasElements = data.pages?.some((p) => p.elements?.length > 0);
-        if (hasElements) {
-          useEditorStore.getState().loadProject(data).then(() => {
+        const { getAutosave } = await import("./api/projects");
+        const saved = await getAutosave();
+        if (saved?.pages) {
+          const hasElements = saved.pages?.some((p) => p.elements?.length > 0);
+          if (hasElements) {
+            await useEditorStore.getState().loadProject({
+              pages: saved.pages,
+              canvasSize: saved.canvas_size,
+            });
             toast("Restored from auto-save", "success");
-          });
+          }
         }
       } catch (e) {
         console.error("Auto-save restore failed", e);
       }
-    }
+    };
+    loadAutosave();
   }, []);
 
   useEffect(() => {
     if (autosaveRef.current) clearTimeout(autosaveRef.current);
     autosaveRef.current = setTimeout(() => {
-      const { pages: p, canvasSize: cs } = useEditorStore.getState();
-      localStorage.setItem(
-        "canva_autosave",
-        JSON.stringify({ pages: p, canvasSize: cs, savedAt: Date.now() })
-      );
-      useEditorStore.getState().setLastSaved(Date.now());
+      try {
+        const { pages: p, canvasSize: cs } = useEditorStore.getState();
+        const safePages = Array.isArray(p)
+          ? p.map((pg) => ({
+              id: pg.id,
+              name: pg.name,
+              backgroundColor: pg.backgroundColor,
+              elements: (pg.elements || []).map((el) => {
+                const { src, ...rest } = el;
+                return el.type === "image" ? { ...rest, src: null } : rest;
+              }),
+            }))
+          : [];
+        const safeCanvasSize = cs
+          ? { width: cs.width, height: cs.height, backgroundColor: cs.backgroundColor }
+          : {};
+        import("./api/projects").then(({ putAutosave }) => {
+          putAutosave({
+            canvas_size: safeCanvasSize,
+            pages: safePages,
+          }).catch(console.error);
+        });
+        useEditorStore.getState().setLastSaved(Date.now());
+      } catch (e) {
+        console.warn("Autosave failed", e);
+      }
     }, 3000);
     return () => {
       if (autosaveRef.current) clearTimeout(autosaveRef.current);

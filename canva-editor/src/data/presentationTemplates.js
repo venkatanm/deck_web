@@ -26,7 +26,18 @@ const L = (x, y, w, stroke, extra = {}) => ({
   rotation: 0, opacity: 1, ...extra,
 });
 
+export const BLANK_TEMPLATE = {
+  id: 'blank',
+  name: 'Blank',
+  category: 'Default',
+  tags: ['blank', 'empty', 'default', 'clean'],
+  thumbnail: { bg: '#ffffff', accent: '#e2e8f0' },
+  canvasSize: { width: 1920, height: 1080, backgroundColor: '#ffffff' },
+  slides: [{ elements: [] }],
+};
+
 export const PRESENTATION_TEMPLATES = [
+  BLANK_TEMPLATE,
   {
     id: 'pitch-deck-dark',
     name: 'Startup Pitch Deck',

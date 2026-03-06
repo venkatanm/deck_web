@@ -1,9 +1,7 @@
 import React from "react";
 import { Image as ImageIcon, X } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
-import { compressImage } from "../utils/compressImage";
-import { saveImage } from "../utils/imageStorage";
-import { v4 as uuidv4 } from "uuid";
+import { uploadImage } from "../api/images";
 
 const Divider = () => (
   <div className="w-px h-6 bg-gray-200 mx-1 flex-shrink-0" />
@@ -143,10 +141,8 @@ export default function FrameToolbar({ el }) {
       const file = e.target.files[0];
       if (!file) return;
       try {
-        const { src } = await compressImage(file);
-        const imageId = uuidv4();
-        await saveImage(imageId, src, file.name, file.type);
-        update({ src, imageId });
+        const result = await uploadImage(file);
+        update({ src: result.url, imageId: result.id });
       } catch (err) {
         console.error("Frame image error", err);
       }

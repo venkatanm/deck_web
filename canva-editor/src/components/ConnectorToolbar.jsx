@@ -43,7 +43,10 @@ const SelectInput = ({ value, onChange, options }) => (
 
 export default function ConnectorToolbar({ el }) {
   const update = (p) => useEditorStore.getState().updateElement(el.id, p);
-  const elements = useEditorStore((s) => s.getCurrentElements());
+  const elements = useEditorStore((s) => {
+    const page = (s.pages || []).find((p) => p.id === s.currentPageId);
+    return page?.elements || [];
+  });
   const fromEl = elements.find((e) => e.id === el.fromId);
   const toEl = elements.find((e) => e.id === el.toId);
 

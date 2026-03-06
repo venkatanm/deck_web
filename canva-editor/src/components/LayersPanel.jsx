@@ -177,7 +177,10 @@ function SortableLayerRow({ el, index }) {
 }
 
 export function LayersPanel() {
-  const elements = useEditorStore((s) => s.getCurrentElements());
+  const elements = useEditorStore((s) => {
+    const page = (s.pages || []).find((p) => p.id === s.currentPageId);
+    return page?.elements || [];
+  });
   const reorderElements = useEditorStore((s) => s.reorderElements);
   const [search, setSearch] = useState("");
 

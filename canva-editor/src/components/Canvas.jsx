@@ -19,6 +19,8 @@ import Konva from "konva";
 import { getStroke } from "perfect-freehand";
 import useEditorStore from "../store/useEditorStore";
 import { useToast } from "./Toast.jsx";
+
+const EMPTY_ELEMENTS = [];
 import { getSnapPosition } from "../utils/snapGuides";
 import { useImageSrc } from "../hooks/useImageSrc";
 import Rulers from "./Rulers";
@@ -1045,7 +1047,7 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
   }
 
   if (el.type === "connector") {
-    const elements = useEditorStore.getState().getCurrentElements();
+    const elements = useEditorStore.getState().getCurrentElements() || [];
     const fromEl = elements.find((e) => e.id === el.fromId);
     const toEl = elements.find((e) => e.id === el.toId);
 
@@ -1833,9 +1835,13 @@ export function Canvas({ onContextMenu }) {
 
   const canvasSize = useEditorStore((s) => s.canvasSize);
   const currentPageId = useEditorStore((s) => s.currentPageId);
+  const currentPageBg = useEditorStore((s) => {
+    const page = (s.pages || []).find((p) => p.id === s.currentPageId);
+    return page?.backgroundColor ?? null;
+  });
   const elements = useEditorStore((s) => {
-    const page = s.pages.find((p) => p.id === s.currentPageId);
-    return page?.elements ?? [];
+    const page = (s.pages || []).find((p) => p.id === s.currentPageId);
+    return page?.elements || EMPTY_ELEMENTS;
   });
   const selectedId = useEditorStore((s) => s.selectedId);
   const selectedIds = useEditorStore((s) => s.selectedIds);
@@ -2239,7 +2245,7 @@ export function Canvas({ onContextMenu }) {
             name="background"
             width={canvasSize.width}
             height={canvasSize.height}
-            fill={canvasSize.backgroundColor || "#ffffff"}
+            fill={currentPageBg ?? canvasSize.backgroundColor ?? "#ffffff"}
             listening={true}
           />
           {showGrid &&

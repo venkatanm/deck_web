@@ -1,0 +1,61 @@
+Category,Layout Name,Nature of Content / Typical Use Case
+Introduction & Framing,1. Title Slide,"Introduces the core topic, subtitle, date, and presenter."
+Introduction & Framing,2. Agenda / Table of Contents,Outlines the roadmap of topics to set audience expectations.
+Introduction & Framing,3. Executive Summary,"Delivers the ""TL;DR"" or a high-level briefing of the entire deck."
+Introduction & Framing,4. Problem Statement,Highlights a specific pain point or market gap to establish context.
+Introduction & Framing,5. Value Proposition,Concisely states the core benefit or solution being offered.
+Introduction & Framing,6. Mission / Vision Statement,Articulates the overarching purpose and future goals of an organization.
+Introduction & Framing,7. Presenter / Speaker Bio,"Establishes credibility with a headshot, title, and brief background."
+Introduction & Framing,8. Section Divider / Transition,Signals a shift to a new chapter or major theme to maintain flow.
+Core Text & Concepts,9. Title & Content (Bullets),"The standard workhorse for delivering structured, text-based points."
+Core Text & Concepts,10. Two-Column Layout,"Compares two distinct ideas, splits long lists, or balances text."
+Core Text & Concepts,11. Three-Column (Pillars),"Highlights three core features, strategic pillars, or distinct services."
+Core Text & Concepts,12. Big Number / Metric Spotlight,"Isolates a single, powerful statistic to ensure maximum audience retention."
+Core Text & Concepts,13. Callout / Blockquote,"Emphasizes a testimonial, expert quote, or critical guiding principle."
+Core Text & Concepts,14. Text with Sidebar,Presents the main narrative alongside a narrow margin for definitions or notes.
+Core Text & Concepts,15. Key Takeaways / Summary,Distills complex sections into 3-4 bulleted conclusions.
+Data & Financials,16. Single Chart (Bar/Line),"Displays primary quantitative trends, growth, or data distributions."
+Data & Financials,17. Multi-Chart / Dashboard,Consolidates several related charts for a holistic performance view.
+Data & Financials,18. Data Table,Organizes dense numerical data or comparative text into rows/columns.
+Data & Financials,19. Waterfall Chart,"Visualizes cumulative financial impacts, such as P&L or cash flow."
+Data & Financials,20. Scatter Plot / Bubble Chart,Maps the correlation or distribution between variables across axes.
+Data & Financials,21. Financial Summary,"Outlines high-level income statements, revenue, or EBITDA projections."
+Data & Financials,22. KPI Grid,"Displays Key Performance Indicators in a clean, easily scannable grid."
+Data & Financials,23. Funnel Diagram,"Illustrates conversion rates, sales pipelines, or user drop-off stages."
+Data & Financials,24. Donut Chart with Center Text,Highlights a central percentage surrounded by its constituent parts.
+Visuals & Media,25. Full-Bleed Image,Leverages an edge-to-edge background photo to evoke emotion or scale.
+Visuals & Media,26. Picture with Caption,Pairs an image directly with a contextual paragraph or explanation.
+Visuals & Media,27. Image Gallery / Grid,"Showcases a portfolio, product line, or multiple locations simultaneously."
+Visuals & Media,28. Video Placeholder,Embeds playback media to demonstrate a product or show an interview.
+Visuals & Media,29. Icon Grid,Replaces heavy text with simple symbols to quickly communicate features.
+Visuals & Media,30. Device Mockup,"Displays software, apps, or UI designs framed inside a laptop or phone."
+Visuals & Media,31. Architecture / System Diagram,"Maps out technical infrastructure, data pipelines, or software stacks."
+Visuals & Media,32. User Flow / Wireframe,Illustrates the step-by-step path a user takes through an interface.
+Visuals & Media,33. Before & After,Visually contrasts a baseline state against the post-intervention result.
+Process & Timelines,34. Horizontal Timeline,"Tracks chronological events, company history, or phases left-to-right."
+Process & Timelines,35. Vertical Timeline,Tracks sequential milestones reading from top-to-bottom.
+Process & Timelines,36. Step-by-Step (Chevron),"Details linear workflows, onboarding processes, or specific instructions."
+Process & Timelines,37. Circular / Lifecycle,"Illustrates continuous, repeating workflows (e.g., Agile methodology)."
+Process & Timelines,38. Gantt Chart,"Maps complex project schedules, task dependencies, and durations."
+Process & Timelines,39. Product Roadmap,Visualizes future feature releases and strategic goals over quarters/years.
+Process & Timelines,40. Swimlane Diagram,Maps workflows while specifying which department/role owns each task.
+Strategy & Frameworks,41. SWOT Analysis,"A 4-quadrant grid evaluating Strengths, Weaknesses, Opportunities, Threats."
+Strategy & Frameworks,42. Competitor Matrix (Quadrant),Positions a brand against competitors based on two defining axes.
+Strategy & Frameworks,43. Persona / Target Audience,"Details the demographics, behaviors, and pain points of an ideal user."
+Strategy & Frameworks,44. Pricing / Feature Tier,"Compares SaaS subscription levels, packages, and included features."
+Strategy & Frameworks,45. Business Model Canvas,"A 1-slide overview of value, channels, cost structure, and revenue streams."
+Strategy & Frameworks,46. Go-To-Market (GTM) Strategy,"Details the launch plan, marketing channels, and sales approach."
+Strategy & Frameworks,47. Organizational Chart,"Visualizes corporate hierarchy, reporting structures, and departments."
+Strategy & Frameworks,48. Meet the Team,Highlights key leadership or project members with photos and titles.
+Strategy & Frameworks,49. Geographic Map,"Shows market penetration, office locations, or logistical routes."
+Strategy & Frameworks,50. Maturity Model,Outlines the evolutionary stages of a capability from basic to advanced.
+Strategy & Frameworks,51. Pyramid Diagram,"Explains foundational hierarchies, such as brand architecture or needs."
+Strategy & Frameworks,52. Venn Diagram,"Highlights intersections, overlaps, and shared traits between groups."
+Strategy & Frameworks,53. Hub & Spoke,"Places a central theme in the middle, branching out to sub-topics."
+Strategy & Frameworks,54. Pros & Cons,Weighs the advantages and disadvantages of a proposed strategic choice.
+Closing & Next Steps,55. Investment Ask / Funding,"Explicitly details capital requirements, runway, and use of funds."
+Closing & Next Steps,56. Call to Action (CTA),"Gives the audience a clear, actionable next step to take."
+Closing & Next Steps,57. Q&A / Open Discussion,Serves as a visual anchor while the floor is open to the audience.
+Closing & Next Steps,58. Resource Links,"Provides URLs, reading materials, or documentation for further study."
+Closing & Next Steps,59. Contact / Thank You,"Displays presenter email, website, and professional social handles."
+Closing & Next Steps,60. Appendix,"Holds deep-dive data, methodology, and legal disclaimers out of the main flow."

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "../api/client";
 
 const STEPS = [
   { id: "sidebar", title: "👈 Start here", body: "Click Elements, Text or Uploads in the sidebar to add content to your canvas.", position: { left: 80, top: 120 }, arrow: "left" },
@@ -12,15 +13,19 @@ export default function Onboarding() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const done = localStorage.getItem("canva_onboarding_done");
-    if (!done) {
-      const t = setTimeout(() => setVisible(true), 1500);
-      return () => clearTimeout(t);
-    }
+    let t;
+    apiFetch("/api/settings")
+      .then(({ onboarding_done }) => {
+        if (!onboarding_done) {
+          t = setTimeout(() => setVisible(true), 1500);
+        }
+      })
+      .catch(() => {});
+    return () => { if (t) clearTimeout(t); };
   }, []);
 
   const dismiss = () => {
-    localStorage.setItem("canva_onboarding_done", "true");
+    apiFetch("/api/settings/onboarding", { method: "PUT" }).catch(() => {});
     setVisible(false);
   };
 

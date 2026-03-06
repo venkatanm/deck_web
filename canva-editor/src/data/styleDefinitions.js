@@ -3,6 +3,7 @@ export const STYLE_DEFINITIONS = {
     {
       id: 'purple-dark',
       name: 'Electric Purple',
+      tone: 'dark',
       colors: {
         bg: '#0f172a',
         primary: '#7c3aed',
@@ -16,6 +17,7 @@ export const STYLE_DEFINITIONS = {
     {
       id: 'ocean-blue',
       name: 'Ocean Blue',
+      tone: 'light',
       colors: {
         bg: '#ffffff',
         primary: '#2563eb',
@@ -29,6 +31,7 @@ export const STYLE_DEFINITIONS = {
     {
       id: 'forest-green',
       name: 'Forest Green',
+      tone: 'light',
       colors: {
         bg: '#f0fdf4',
         primary: '#16a34a',
@@ -42,6 +45,7 @@ export const STYLE_DEFINITIONS = {
     {
       id: 'sunset-warm',
       name: 'Sunset Warm',
+      tone: 'light',
       colors: {
         bg: '#fffbeb',
         primary: '#f59e0b',
@@ -55,6 +59,7 @@ export const STYLE_DEFINITIONS = {
     {
       id: 'rose-pink',
       name: 'Rose Pink',
+      tone: 'light',
       colors: {
         bg: '#fff1f2',
         primary: '#e11d48',
@@ -68,6 +73,7 @@ export const STYLE_DEFINITIONS = {
     {
       id: 'midnight-mono',
       name: 'Midnight Mono',
+      tone: 'dark',
       colors: {
         bg: '#0a0a0a',
         primary: '#ffffff',
@@ -81,6 +87,7 @@ export const STYLE_DEFINITIONS = {
     {
       id: 'paper-minimal',
       name: 'Paper Minimal',
+      tone: 'light',
       colors: {
         bg: '#fafaf9',
         primary: '#1c1917',
@@ -94,6 +101,7 @@ export const STYLE_DEFINITIONS = {
     {
       id: 'corporate-navy',
       name: 'Corporate Navy',
+      tone: 'light',
       colors: {
         bg: '#f8fafc',
         primary: '#0f4c81',
@@ -107,6 +115,7 @@ export const STYLE_DEFINITIONS = {
     {
       id: 'teal-fresh',
       name: 'Teal Fresh',
+      tone: 'light',
       colors: {
         bg: '#f0fdfa',
         primary: '#0d9488',
@@ -116,6 +125,48 @@ export const STYLE_DEFINITIONS = {
         accent: '#8b5cf6',
       },
       preview: ['#f0fdfa', '#0d9488', '#14b8a6', '#8b5cf6'],
+    },
+    {
+      id: 'crimson-dark',
+      name: 'Crimson Night',
+      tone: 'dark',
+      colors: {
+        bg: '#1a0a0a',
+        primary: '#dc2626',
+        secondary: '#f87171',
+        text: '#ffffff',
+        subtle: '#9ca3af',
+        accent: '#fbbf24',
+      },
+      preview: ['#1a0a0a', '#dc2626', '#f87171', '#fbbf24'],
+    },
+    {
+      id: 'slate-professional',
+      name: 'Slate Pro',
+      tone: 'dark',
+      colors: {
+        bg: '#1e293b',
+        primary: '#38bdf8',
+        secondary: '#7dd3fc',
+        text: '#f1f5f9',
+        subtle: '#94a3b8',
+        accent: '#34d399',
+      },
+      preview: ['#1e293b', '#38bdf8', '#7dd3fc', '#34d399'],
+    },
+    {
+      id: 'sand-neutral',
+      name: 'Sand Neutral',
+      tone: 'light',
+      colors: {
+        bg: '#fdf8f0',
+        primary: '#b45309',
+        secondary: '#d97706',
+        text: '#1c1917',
+        subtle: '#92400e',
+        accent: '#059669',
+      },
+      preview: ['#fdf8f0', '#b45309', '#d97706', '#059669'],
     },
   ],
 

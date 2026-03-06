@@ -781,7 +781,10 @@ function GroupToolbar({ el, update }) {
 export default function Toolbar() {
   const selectedId = useEditorStore((s) => s.selectedId);
   const selectedIds = useEditorStore((s) => s.selectedIds);
-  const selectedElement = useEditorStore((s) => s.getSelectedElement());
+  const selectedElement = useEditorStore((s) => {
+    const page = (s.pages || []).find((p) => p.id === s.currentPageId);
+    return page?.elements?.find((e) => e.id === s.selectedId) ?? null;
+  });
   const update = (props) => useEditorStore.getState().updateElement(selectedElement?.id, props);
 
   if (selectedIds.length > 1) return <MultiSelectToolbar />;
