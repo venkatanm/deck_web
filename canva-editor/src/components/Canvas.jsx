@@ -200,23 +200,21 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
   const transformerRef = useRef(null);
   const textRef = useRef(null);
   const [editing, setEditing] = useState(false);
-  const {
-    setSelectedIds,
-    toggleSelectedId,
-    updateElement,
-    deleteElement,
-    undo,
-    redo,
-    duplicateElement,
-    copyElement,
-    pasteElement,
-    moveElementUp,
-    moveElementDown,
-    selectedId,
-    history,
-    future,
-    clipboardElement,
-  } = useEditorStore();
+  const setSelectedIds = useEditorStore((s) => s.setSelectedIds);
+  const toggleSelectedId = useEditorStore((s) => s.toggleSelectedId);
+  const updateElement = useEditorStore((s) => s.updateElement);
+  const deleteElement = useEditorStore((s) => s.deleteElement);
+  const undo = useEditorStore((s) => s.undo);
+  const redo = useEditorStore((s) => s.redo);
+  const duplicateElement = useEditorStore((s) => s.duplicateElement);
+  const copyElement = useEditorStore((s) => s.copyElement);
+  const pasteElement = useEditorStore((s) => s.pasteElement);
+  const moveElementUp = useEditorStore((s) => s.moveElementUp);
+  const moveElementDown = useEditorStore((s) => s.moveElementDown);
+  const selectedId = useEditorStore((s) => s.selectedId);
+  const history = useEditorStore((s) => s.history);
+  const future = useEditorStore((s) => s.future);
+  const clipboardElement = useEditorStore((s) => s.clipboardElement);
 
   if (el.visible === false) return null;
 
@@ -237,6 +235,7 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
     id: el.id,
     name: el.id,
     hitStrokeWidth: 20,
+    perfectDrawEnabled: false,
     draggable: !isInGroup && el.locked !== true,
     dragBoundFunc: isInGroup ? undefined : makeDragBound(el, canvasSize),
     listening: !isInGroup,
@@ -2240,13 +2239,15 @@ export function Canvas({ onContextMenu }) {
           onContextMenu?.(e.evt.clientX, e.evt.clientY, id || selectedId);
         }}
         >
-        <Layer>
+        {/* Static layer: background + grid — only redraws when bg/grid changes, not on element updates */}
+        <Layer listening={false}>
           <Rect
             name="background"
             width={canvasSize.width}
             height={canvasSize.height}
             fill={currentPageBg ?? canvasSize.backgroundColor ?? "#ffffff"}
-            listening={true}
+            listening={false}
+            perfectDrawEnabled={false}
           />
           {showGrid &&
             Array.from({ length: Math.ceil(canvasSize.width / 40) }, (_, i) => (
@@ -2256,6 +2257,7 @@ export function Canvas({ onContextMenu }) {
                 stroke="#e2e8f0"
                 strokeWidth={0.5}
                 listening={false}
+                perfectDrawEnabled={false}
               />
             ))}
           {showGrid &&
@@ -2266,6 +2268,7 @@ export function Canvas({ onContextMenu }) {
                 stroke="#e2e8f0"
                 strokeWidth={0.5}
                 listening={false}
+                perfectDrawEnabled={false}
               />
             ))}
           {elements.length === 0 && (
@@ -2279,8 +2282,20 @@ export function Canvas({ onContextMenu }) {
               align="center"
               width={300}
               listening={false}
+              perfectDrawEnabled={false}
             />
           )}
+        </Layer>
+        {/* Interactive layer: elements + transformer — background never invalidates this layer */}
+        <Layer>
+          <Rect
+            name="background"
+            width={canvasSize.width}
+            height={canvasSize.height}
+            fill="transparent"
+            listening={true}
+            perfectDrawEnabled={false}
+          />
           {elements.map((el) => (
             <ElementNode
               key={el.id}
