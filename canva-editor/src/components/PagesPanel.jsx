@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -12,11 +12,11 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
 import { usePageThumbnail } from "../hooks/usePageThumbnail";
 
-function SortablePageThumb({ page, index, isActive, stableId }) {
+function SortablePageThumb({ page, index, isActive, isSelected, stableId, onSelect }) {
   const {
     attributes,
     listeners,
@@ -83,7 +83,7 @@ function SortablePageThumb({ page, index, isActive, stableId }) {
       {...attributes}
       {...listeners}
       className="relative flex-shrink-0 cursor-grab active:cursor-grabbing group"
-      onClick={() => setCurrentPage(page.id)}
+      onClick={(e) => { onSelect(index, e.shiftKey, e.ctrlKey || e.metaKey); setCurrentPage(page.id); }}
       onContextMenu={handleContextMenu}
     >
       <p className="absolute top-0 left-0 text-[10px] text-gray-400 -translate-y-4">
@@ -93,6 +93,8 @@ function SortablePageThumb({ page, index, isActive, stableId }) {
         className={`rounded-lg overflow-hidden border-2 transition-all ${
           isActive
             ? "border-purple-500 shadow-md"
+            : isSelected
+            ? "border-purple-300 shadow-sm"
             : "border-transparent hover:border-gray-300"
         }`}
         style={{ width: thumbWidth, height: thumbHeight }}
@@ -170,8 +172,11 @@ export default function PagesPanel() {
   const pages = useEditorStore((s) => s.pages);
   const currentPageId = useEditorStore((s) => s.currentPageId);
   const addPage = useEditorStore((s) => s.addPage);
+  const deletePage = useEditorStore((s) => s.deletePage);
   const reorderPages = useEditorStore((s) => s.reorderPages);
   const canvasSize = useEditorStore((s) => s.canvasSize);
+
+  const [selectedIndices, setSelectedIndices] = useState(new Set());
 
   const aspectRatio = canvasSize.height / canvasSize.width;
   const thumbWidth = 88;
@@ -183,11 +188,56 @@ export default function PagesPanel() {
     })
   );
 
+  const handleSelect = useCallback((index, shiftKey, ctrlKey) => {
+    setSelectedIndices((prev) => {
+      const next = new Set(prev);
+      if (ctrlKey) {
+        if (next.has(index)) next.delete(index);
+        else next.add(index);
+      } else if (shiftKey && prev.size > 0) {
+        const last = Math.max(...prev);
+        const min = Math.min(last, index);
+        const max = Math.max(last, index);
+        for (let i = min; i <= max; i++) next.add(i);
+      } else {
+        next.clear();
+        next.add(index);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleDeleteSelected = useCallback(() => {
+    const list = pages || [];
+    if (selectedIndices.size === 0 || list.length <= selectedIndices.size) return;
+    // Delete from highest index to lowest to avoid index shifting
+    const sorted = [...selectedIndices].sort((a, b) => b - a);
+    sorted.forEach((i) => {
+      if (list[i]) deletePage(list[i].id);
+    });
+    setSelectedIndices(new Set());
+  }, [selectedIndices, pages, deletePage]);
+
+  // Delete key handler
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Delete" && selectedIndices.size > 1) {
+        // only intercept when multiple slides selected (single-slide delete handled by canvas)
+        const active = document.activeElement;
+        const isInput = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable);
+        if (!isInput) {
+          e.stopPropagation();
+          handleDeleteSelected();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [selectedIndices, handleDeleteSelected]);
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (!active || !over || active.id === over.id) return;
-
-    // SortableContext uses page-0, page-1, ... as ids
     const parseIndex = (id) => {
       const m = String(id).match(/^page-(\d+)$/);
       return m ? parseInt(m[1], 10) : -1;
@@ -196,8 +246,11 @@ export default function PagesPanel() {
     const newIndex = parseIndex(over.id);
     if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
       reorderPages(oldIndex, newIndex);
+      setSelectedIndices(new Set());
     }
   };
+
+  const currentIndex = (pages || []).findIndex((p) => p.id === currentPageId);
 
   return (
     <div className="h-[140px] bg-gray-100 border-t border-gray-200 flex items-center gap-3 px-4 overflow-x-auto scrollbar-hide">
@@ -217,12 +270,27 @@ export default function PagesPanel() {
                 page={page}
                 index={index}
                 isActive={page.id === currentPageId}
+                isSelected={selectedIndices.has(index)}
                 stableId={`page-${index}`}
+                onSelect={handleSelect}
               />
             ))}
           </div>
         </SortableContext>
       </DndContext>
+
+      {/* Bulk delete button */}
+      {selectedIndices.size > 1 && (
+        <button
+          type="button"
+          onClick={handleDeleteSelected}
+          disabled={(pages || []).length <= selectedIndices.size}
+          className="flex-shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+        >
+          <Trash2 size={16} />
+          Delete {selectedIndices.size}
+        </button>
+      )}
 
       {/* Add page button */}
       <button

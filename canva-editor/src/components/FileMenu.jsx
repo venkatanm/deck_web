@@ -180,8 +180,9 @@ export default function FileMenu({ onDownload }) {
     try {
       await saveProject(title || "Untitled Design");
       toast("Project saved!", "success");
-    } catch {
-      toast("Failed to save project", "error");
+    } catch (err) {
+      console.error("Save failed:", err);
+      toast(`Failed to save: ${err?.message || "unknown error"}`, "error");
     }
   };
 

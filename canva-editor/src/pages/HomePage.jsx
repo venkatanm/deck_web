@@ -269,7 +269,10 @@ export default function HomePage() {
 
   const handleOpenProject = async (project) => {
     try {
-      await loadProject(project);
+      // List endpoint omits pages — fetch the full project first
+      const { getProject } = await import("../api/projects");
+      const full = await getProject(project.id);
+      await loadProject(full);
       navigate("/editor");
     } catch {
       toast("Failed to open project", "error");

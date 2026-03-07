@@ -214,8 +214,8 @@ export const LAYOUT_DEFINITIONS = [
     generate({ width: W, height: H }) {
       return [
         makeText({ text: 'Add a heading', x: W * 0.1, y: H * 0.06, width: W * 0.8, fontSize: 52, fontStyle: 'bold', fill: '#111111', align: 'center' }),
-        makeText({ text: 'Present with ease and wow any audience with Canva Presentations. Choose from over a thousand professionally-made templates to fit any objective or topic. Make it your own by customizing it with text and photos.', x: W * 0.04, y: H * 0.32, width: W * 0.44, fontSize: 18, fill: '#111111', fontStyle: 'bold' }),
-        makeText({ text: 'Present with ease and wow any audience with Canva Presentations. Choose from over a thousand professionally-made templates to fit any objective or topic. Make it your own by customizing it with text and photos.', x: W * 0.52, y: H * 0.32, width: W * 0.44, fontSize: 18, fill: '#111111', fontStyle: 'bold' }),
+        makeText({ text: 'Add your content here. Replace this placeholder with your own text to tell your story.', x: W * 0.04, y: H * 0.32, width: W * 0.44, fontSize: 18, fill: '#111111', fontStyle: 'bold' }),
+        makeText({ text: 'Add your content here. Replace this placeholder with your own text to tell your story.', x: W * 0.52, y: H * 0.32, width: W * 0.44, fontSize: 18, fill: '#111111', fontStyle: 'bold' }),
       ];
     },
     apply: applyGeneric,
@@ -227,8 +227,8 @@ export const LAYOUT_DEFINITIONS = [
     generate({ width: W, height: H }) {
       return [
         makeText({ text: 'Add a heading', x: W * 0.05, y: H * 0.08, width: W * 0.9, fontSize: 52, fontStyle: 'bold', fill: '#111111', align: 'left' }),
-        makeText({ text: 'Present with ease and wow any audience with Canva Presentations. Choose from over a thousand professionally-made templates to fit any objective or topic. Make it your own by customizing it with text and photos. Apply page animations and transitions to your Canva Presentation to emphasize ideas and make them even more memorable.', x: W * 0.05, y: H * 0.32, width: W * 0.43, fontSize: 18, fill: '#111111', fontStyle: 'bold' }),
-        makeText({ text: 'Present with ease and wow any audience with Canva Presentations. Choose from over a thousand professionally-made templates to fit any objective or topic. Make it your own by customizing it with text and photos. Apply page animations and transitions to your Canva Presentation to emphasize ideas and make them even more memorable.', x: W * 0.52, y: H * 0.32, width: W * 0.43, fontSize: 18, fill: '#111111', fontStyle: 'bold' }),
+        makeText({ text: 'Add your content here. Replace this placeholder with your own text to tell your story and make an impact with every slide.', x: W * 0.05, y: H * 0.32, width: W * 0.43, fontSize: 18, fill: '#111111', fontStyle: 'bold' }),
+        makeText({ text: 'Add your content here. Replace this placeholder with your own text to tell your story and make an impact with every slide.', x: W * 0.52, y: H * 0.32, width: W * 0.43, fontSize: 18, fill: '#111111', fontStyle: 'bold' }),
       ];
     },
     apply: applyGeneric,

@@ -1,5 +1,5 @@
 /**
- * AppHeader - Canva-style top bar with global controls.
+ * AppHeader - Top bar with global controls.
  * Home, File, Undo/Redo, editable title, Share, Present.
  */
 

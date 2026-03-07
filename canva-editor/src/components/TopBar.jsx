@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { RotateCcw, RotateCw, Share2, Download, Play, HelpCircle, Wand2, LogOut } from "lucide-react";
+import { RotateCcw, RotateCw, Share2, Download, Play, HelpCircle, Wand2, LogOut, MessageSquarePlus } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
 import ImportFromAIModal from "./ImportFromAIModal";
 import FileMenu from "./FileMenu";
@@ -20,7 +20,7 @@ const ToolBtn = ({ onClick, disabled, title, children }) => (
 
 import { useToast } from "./Toast.jsx";
 
-export default function TopBar({ onShare, onDownload, onPresent }) {
+export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onToggleAIChat }) {
   const toast = useToast();
   const navigate = useNavigate();
   const title = useEditorStore((s) => s.title);
@@ -98,6 +98,21 @@ export default function TopBar({ onShare, onDownload, onPresent }) {
 
       {/* Right actions */}
       <div className="flex items-center gap-2">
+        {/* AI Chat — purple gradient, toggleable */}
+        <button
+          type="button"
+          onClick={onToggleAIChat}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all shadow-sm ${
+            showAIChat
+              ? "bg-purple-700 text-white ring-2 ring-purple-400"
+              : "text-white hover:opacity-90"
+          }`}
+          style={showAIChat ? {} : { background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)" }}
+        >
+          <MessageSquarePlus size={14} />
+          AI Assistant
+        </button>
+
         {/* AI Import — teal gradient */}
         <button
           type="button"

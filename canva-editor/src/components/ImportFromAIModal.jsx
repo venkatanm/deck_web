@@ -1,13 +1,13 @@
 import { useState, useRef } from "react";
 import {
   Wand2,
-  Upload,
-  FileJson,
   FileText,
   AlertCircle,
   CheckCircle2,
   X,
   Loader2,
+  Download,
+  FolderOpen,
 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
 import {
@@ -16,26 +16,25 @@ import {
 } from "../utils/importContentSchema";
 import {
   validateContentSchema,
-  EXAMPLE_CONTENT_SCHEMA,
   DOCUMENT_TYPE_TO_TEMPLATE,
 } from "../data/contentSchema";
 import { PRESENTATION_TEMPLATES } from "../data/presentationTemplates";
-import StreamingImportPanel from "./StreamingImportPanel";
 
 const ACCEPTED_DOC_TYPES = ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt";
 
 export default function ImportFromAIModal({ onClose }) {
-  // "convert" is the new primary tab; others preserved
   const [tab, setTab] = useState("convert");
   const [json, setJson] = useState("");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  // Convert-tab state
+  // Convert tab state
   const [docFile, setDocFile] = useState(null);
   const [converting, setConverting] = useState(false);
+  // Result from pipeline — { canva_schema?, pptx_filename? }
+  const [result, setResult] = useState(null);
+
   const docFileRef = useRef();
-  const jsonFileRef = useRef();
 
   const brandKit = useEditorStore((s) => s.brandKit);
   const canvasSize = useEditorStore((s) => s.canvasSize);
@@ -45,22 +44,7 @@ export default function ImportFromAIModal({ onClose }) {
   const setTitle = useEditorStore((s) => s.setTitle);
   const _snapshot = useEditorStore((s) => s._snapshot);
 
-  const doImport = (jsonString) => {
-    setError(null);
-    let schema;
-    try {
-      schema = JSON.parse(jsonString);
-    } catch {
-      setError("Invalid JSON — check for syntax errors.");
-      return;
-    }
-
-    const { valid, errors } = validateContentSchema(schema);
-    if (!valid) {
-      setError("Schema errors:\n" + errors.join("\n"));
-      return;
-    }
-
+  const doImport = (schema) => {
     _snapshot(true);
 
     const templateId =
@@ -94,27 +78,27 @@ export default function ImportFromAIModal({ onClose }) {
     setTimeout(() => onClose(), 1200);
   };
 
-  // ── Convert tab: upload doc → pipeline → import ──────────────────────────
   const handleDocFileChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) setDocFile(file);
+    if (file) { setDocFile(file); setResult(null); }
   };
 
   const handleDocDrop = (e) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (file) setDocFile(file);
+    if (file) { setDocFile(file); setResult(null); }
   };
 
   const handleConvert = async () => {
     if (!docFile) return;
     setError(null);
+    setResult(null);
     setConverting(true);
 
     try {
       const form = new FormData();
       form.append("file", docFile);
-      form.append("output_mode", "json_only");
+      form.append("output_mode", "both");
 
       const res = await fetch("/pipeline/api/doc-to-deck", {
         method: "POST",
@@ -127,10 +111,10 @@ export default function ImportFromAIModal({ onClose }) {
       }
 
       const envelope = await res.json();
-      // Service returns { output_mode, canva_schema } — unwrap before importing
-      const schema = envelope.canva_schema;
-      if (!schema) throw new Error("Pipeline returned no canva_schema in response.");
-      doImport(JSON.stringify(schema));
+      if (!envelope.canva_schema && !envelope.pptx_url) {
+        throw new Error("Pipeline returned no usable output.");
+      }
+      setResult(envelope);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -138,25 +122,42 @@ export default function ImportFromAIModal({ onClose }) {
     }
   };
 
-  // ── JSON file upload tab ──────────────────────────────────────────────────
-  const handleJsonFile = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const text = await file.text();
-    setJson(text);
-    doImport(text);
+  const handleOpenInDeckWeb = () => {
+    const schema = result?.canva_schema;
+    if (!schema) { setError("No schema available to open in DeckWeb."); return; }
+    const { valid, errors } = validateContentSchema(schema);
+    if (!valid) { setError("Schema errors:\n" + errors.join("\n")); return; }
+    doImport(schema);
   };
 
-  const handleExample = () => {
-    doImport(JSON.stringify(EXAMPLE_CONTENT_SCHEMA));
+  const handleDownloadPptx = () => {
+    const pptxUrl = result?.pptx_url;
+    if (!pptxUrl) return;
+    // pptx_url is a path like "/download/Deck_Title_123456.pptx"
+    // Prefix with /pipeline so Nginx routes it to the pipeline service
+    const a = document.createElement("a");
+    a.href = `/pipeline${pptxUrl}`;
+    a.download = pptxUrl.split("/").pop();
+    a.click();
+  };
+
+  const handlePasteImport = () => {
+    setError(null);
+    let schema;
+    try {
+      schema = JSON.parse(json);
+    } catch {
+      setError("Invalid JSON — check for syntax errors.");
+      return;
+    }
+    const { valid, errors } = validateContentSchema(schema);
+    if (!valid) { setError("Schema errors:\n" + errors.join("\n")); return; }
+    doImport(schema);
   };
 
   const TABS = [
     { id: "convert", label: "Convert Doc" },
     { id: "paste",   label: "Paste JSON" },
-    { id: "file",    label: "JSON File" },
-    { id: "example", label: "Example" },
-    { id: "stream",  label: "Live Stream" },
   ];
 
   return (
@@ -166,7 +167,7 @@ export default function ImportFromAIModal({ onClose }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-purple-600" />
-            <h2 className="font-bold text-gray-900">Import from AI Pipeline</h2>
+            <h2 className="font-bold text-gray-900">AI Doc Converter</h2>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
@@ -174,12 +175,12 @@ export default function ImportFromAIModal({ onClose }) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100 overflow-x-auto">
+        <div className="flex border-b border-gray-100">
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => { setTab(t.id); setError(null); }}
-              className={`flex-shrink-0 px-4 py-2.5 text-xs font-medium transition-colors ${
+              onClick={() => { setTab(t.id); setError(null); setResult(null); }}
+              className={`px-5 py-2.5 text-xs font-medium transition-colors ${
                 tab === t.id
                   ? "text-purple-700 border-b-2 border-purple-600"
                   : "text-gray-500 hover:text-gray-700"
@@ -196,7 +197,7 @@ export default function ImportFromAIModal({ onClose }) {
             <div className="flex flex-col items-center gap-3 py-6">
               <CheckCircle2 className="w-12 h-12 text-green-500" />
               <p className="font-semibold text-gray-800">Slides imported successfully!</p>
-              <p className="text-sm text-gray-500">Closing...</p>
+              <p className="text-sm text-gray-500">Closing…</p>
             </div>
           )}
 
@@ -214,11 +215,9 @@ export default function ImportFromAIModal({ onClose }) {
               {tab === "convert" && (
                 <div className="flex flex-col gap-4">
                   <p className="text-xs text-gray-500 leading-relaxed">
-                    Upload a document and the AI pipeline will convert it into a
-                    presentation automatically.
+                    Upload a document and the AI pipeline will convert it into a presentation.
                   </p>
 
-                  {/* Drop zone */}
                   <input
                     ref={docFileRef}
                     type="file"
@@ -246,30 +245,64 @@ export default function ImportFromAIModal({ onClose }) {
                     ) : (
                       <>
                         <span>Click to select a file</span>
-                        <span className="text-xs text-gray-300">
-                          PDF, Word, Excel, PowerPoint, or plain text
-                        </span>
+                        <span className="text-xs text-gray-300">PDF, Word, Excel, PowerPoint, or plain text</span>
                       </>
                     )}
                   </button>
 
-                  <button
-                    onClick={handleConvert}
-                    disabled={!docFile || converting}
-                    className="w-full py-3 bg-purple-600 text-white text-sm rounded-xl font-medium hover:bg-purple-700 disabled:opacity-40 flex items-center justify-center gap-2"
-                  >
-                    {converting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Converting…
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-4 h-4" />
-                        Convert & Import
-                      </>
-                    )}
-                  </button>
+                  {/* Convert button — only shown before result */}
+                  {!result && (
+                    <button
+                      onClick={handleConvert}
+                      disabled={!docFile || converting}
+                      className="w-full py-3 bg-purple-600 text-white text-sm rounded-xl font-medium hover:bg-purple-700 disabled:opacity-40 flex items-center justify-center gap-2"
+                    >
+                      {converting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Converting…
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-4 h-4" />
+                          Convert
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Result actions */}
+                  {result && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-xs text-center text-green-600 font-medium">
+                        Conversion complete — choose what to do:
+                      </p>
+                      {result.canva_schema && (
+                        <button
+                          onClick={handleOpenInDeckWeb}
+                          className="w-full py-3 bg-purple-600 text-white text-sm rounded-xl font-medium hover:bg-purple-700 flex items-center justify-center gap-2"
+                        >
+                          <FolderOpen className="w-4 h-4" />
+                          Open in DeckWeb
+                        </button>
+                      )}
+                      {result.pptx_url && (
+                        <button
+                          onClick={handleDownloadPptx}
+                          className="w-full py-3 bg-white border border-gray-200 text-gray-700 text-sm rounded-xl font-medium hover:bg-gray-50 flex items-center justify-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download PPTX
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { setResult(null); setError(null); }}
+                        className="text-xs text-gray-400 hover:text-gray-600 text-center mt-1"
+                      >
+                        Convert another file
+                      </button>
+                    </div>
+                  )}
 
                   <p className="text-[10px] text-gray-400 text-center -mt-1">
                     Requires the doc-to-deck pipeline service running on port 8001.
@@ -281,7 +314,7 @@ export default function ImportFromAIModal({ onClose }) {
               {tab === "paste" && (
                 <div className="flex flex-col gap-3">
                   <p className="text-xs text-gray-500 leading-relaxed">
-                    Paste the JSON output from your doc-to-deck pipeline below.
+                    Paste the JSON schema output from the doc-to-deck pipeline.
                   </p>
                   <textarea
                     value={json}
@@ -291,58 +324,12 @@ export default function ImportFromAIModal({ onClose }) {
                     spellCheck={false}
                   />
                   <button
-                    onClick={() => doImport(json)}
+                    onClick={handlePasteImport}
                     disabled={!json.trim()}
                     className="w-full py-3 bg-purple-600 text-white text-sm rounded-xl font-medium hover:bg-purple-700 disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     <Wand2 className="w-4 h-4" />
-                    Import & Generate Slides
-                  </button>
-                </div>
-              )}
-
-              {/* JSON FILE tab */}
-              {tab === "file" && (
-                <div className="flex flex-col gap-3">
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Upload a .json file matching the content schema from your pipeline.
-                  </p>
-                  <input
-                    ref={jsonFileRef}
-                    type="file"
-                    accept=".json,application/json"
-                    className="hidden"
-                    onChange={handleJsonFile}
-                  />
-                  <button
-                    onClick={() => jsonFileRef.current?.click()}
-                    className="w-full py-8 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-400 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 transition-all flex flex-col items-center gap-3"
-                  >
-                    <FileJson className="w-8 h-8" />
-                    <span>Click to select .json file</span>
-                    <span className="text-xs text-gray-300">or drag and drop</span>
-                  </button>
-                </div>
-              )}
-
-              {/* STREAM tab */}
-              {tab === "stream" && <StreamingImportPanel />}
-
-              {/* EXAMPLE tab */}
-              {tab === "example" && (
-                <div className="flex flex-col gap-3">
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Load a sample 5-slide pitch deck to test brand kit and template settings.
-                  </p>
-                  <div className="bg-gray-50 rounded-xl p-3 text-xs font-mono text-gray-500 max-h-40 overflow-y-auto">
-                    {JSON.stringify(EXAMPLE_CONTENT_SCHEMA, null, 2).slice(0, 400)}...
-                  </div>
-                  <button
-                    onClick={handleExample}
-                    className="w-full py-3 bg-purple-600 text-white text-sm rounded-xl font-medium hover:bg-purple-700 flex items-center justify-center gap-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Load Example Deck
+                    Open in DeckWeb
                   </button>
                 </div>
               )}

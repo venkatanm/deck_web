@@ -1,5 +1,5 @@
 /**
- * LeftSidebar - Canva-style vertical tool panel.
+ * LeftSidebar - Vertical tool panel.
  * Templates, Elements, Text, Brand, Uploads, Tools, Projects.
  * Integrates slide thumbnails and layout picker.
  */

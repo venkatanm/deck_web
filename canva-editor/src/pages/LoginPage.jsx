@@ -30,7 +30,7 @@ export default function LoginPage() {
           <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-lg">C</span>
           </div>
-          <span className="font-bold text-gray-800 text-xl">CanvaClone</span>
+          <span className="font-bold text-gray-800 text-xl">DeckWeb</span>
         </div>
         <h1 className="text-xl font-semibold text-gray-900 mb-6">Sign in</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

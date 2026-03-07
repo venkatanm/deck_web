@@ -16,6 +16,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import useEditorStore from "./store/useEditorStore";
 import { useToast } from "./components/Toast.jsx";
 import GenerationStatusBar from "./components/GenerationStatusBar";
+import AIChatPanel from "./components/AIChatPanel";
 import { shallow } from "zustand/shallow";
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
   });
   const [showDownload, setShowDownload] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
   const toast = useToast();
   const autosaveRef = useRef(null);
 
@@ -117,7 +119,7 @@ export default function App() {
 
   const title = useEditorStore((s) => s.title);
   useEffect(() => {
-    document.title = `${title || "Untitled"} — CanvaClone`;
+    document.title = `${title || "Untitled"} — DeckWeb`;
   }, [title]);
 
   return (
@@ -128,6 +130,8 @@ export default function App() {
         onShare={() => setShowShare(true)}
         onDownload={() => setShowDownload(true)}
         onPresent={() => setPresentMode(true)}
+        showAIChat={showAIChat}
+        onToggleAIChat={() => setShowAIChat((v) => !v)}
       />
 
       <Toolbar />
@@ -166,6 +170,8 @@ export default function App() {
       {presentMode && <PresentMode />}
 
       {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
+
+      {showAIChat && <AIChatPanel onClose={() => setShowAIChat(false)} />}
 
       <Onboarding />
       </div>

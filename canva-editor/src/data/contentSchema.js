@@ -2,7 +2,7 @@
  * CANONICAL CONTENT SCHEMA v1
  *
  * This is the structure the AI pipeline outputs.
- * The Canva clone import engine reads this and
+ * The DeckWeb import engine reads this and
  * converts it to canvas elements.
  *
  * Supported slideTypes:
@@ -37,7 +37,7 @@ export function validateContentSchema(schema) {
 }
 
 // Maps documentType from pipeline to template id
-// in the Canva clone
+// in DeckWeb
 export const DOCUMENT_TYPE_TO_TEMPLATE = {
   earnings_report: "corporate-report",
   pitch_deck: "pitch-deck-dark",

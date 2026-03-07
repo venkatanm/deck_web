@@ -515,6 +515,14 @@ const useEditorStore = create((set, get) => ({
     }
   },
 
+  insertPageAt: (page, index) => {
+    const { pages } = get();
+    const list = [...(pages || [])];
+    const at = Math.min(Math.max(index, 0), list.length);
+    list.splice(at, 0, page);
+    set({ pages: list, selectedId: null, selectedIds: [] });
+  },
+
   deletePage: (id) => {
     const { pages, currentPageId } = get();
     const pagesList = pages || [];
@@ -691,7 +699,7 @@ const useEditorStore = create((set, get) => ({
 
   // ── Project save/load ──────────────────────
   saveProject: async (name) => {
-    const { pages, canvasSize } = get();
+    const { pages, canvasSize, projectId } = get();
     const pagesToSave = clonePages(pages).map(p => ({
       ...p,
       elements: p.elements.map(el =>
@@ -700,14 +708,23 @@ const useEditorStore = create((set, get) => ({
           : el
       ),
     }));
-    const { createProject } = await import('../api/projects');
-    const { id } = await createProject({
+    const payload = {
       name: name || 'Untitled Design',
       canvas_size: canvasSize,
       pages: pagesToSave,
       thumbnail_url: null,
-    });
-    return { id, name: name || 'Untitled Design', savedAt: new Date().toISOString() };
+    };
+    const { createProject, updateProject } = await import('../api/projects');
+    if (projectId) {
+      // Update existing project in place
+      await updateProject(projectId, payload);
+      return { id: projectId, name: payload.name, savedAt: new Date().toISOString() };
+    } else {
+      // First save — create new project and remember its id
+      const { id } = await createProject(payload);
+      set({ projectId: id });
+      return { id, name: payload.name, savedAt: new Date().toISOString() };
+    }
   },
 
   loadProject: async (project) => {
@@ -724,7 +741,17 @@ const useEditorStore = create((set, get) => ({
       ),
     }));
     const canvasSize = project.canvas_size || project.canvasSize;
-    set({ pages: resolvedPages, canvasSize: canvasSize || get().canvasSize, currentPageId: pages[0]?.id || get().currentPageId, selectedId: null, selectedIds: [], history: [], future: [], title: project.name || 'Untitled Design' });
+    set({
+      pages: resolvedPages,
+      canvasSize: canvasSize || get().canvasSize,
+      currentPageId: pages[0]?.id || get().currentPageId,
+      selectedId: null,
+      selectedIds: [],
+      history: [],
+      future: [],
+      title: project.name || 'Untitled Design',
+      projectId: project.id || null,
+    });
   },
 }));
 

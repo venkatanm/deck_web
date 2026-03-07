@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Any
 from datetime import datetime, timezone
 import uuid
+import traceback
 from database import get_db
 from models import Project
 from auth import get_current_user, User
@@ -53,18 +54,75 @@ async def create_project(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    project = Project(
-        user_id=user.id,
-        name=body.name,
-        canvas_size=body.canvas_size,
-        pages=body.pages,
-        thumbnail_url=body.thumbnail_url,
-        is_autosave=False
+    try:
+        project = Project(
+            user_id=user.id,
+            name=body.name,
+            canvas_size=body.canvas_size,
+            pages=body.pages,
+            thumbnail_url=body.thumbnail_url,
+            is_autosave=False
+        )
+        db.add(project)
+        await db.commit()
+        await db.refresh(project)
+        return {"id": str(project.id), "name": project.name}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(500, f"Failed to create project: {str(e)}")
+
+# ── Autosave (upsert — one row per user) ───────────
+# IMPORTANT: these must be registered BEFORE /{project_id} routes
+# or FastAPI will match "autosave" as a project_id UUID and fail.
+
+@router.get("/autosave/current")
+async def get_autosave(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(Project).where(and_(
+            Project.user_id == user.id,
+            Project.is_autosave == True
+        ))
     )
-    db.add(project)
+    project = result.scalar_one_or_none()
+    if not project:
+        return None
+    return {
+        "canvas_size": project.canvas_size,
+        "pages": project.pages,
+        "updated_at": project.updated_at.isoformat(),
+    }
+
+@router.put("/autosave/current")
+async def autosave(
+    body: AutosaveSave,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(Project).where(and_(
+            Project.user_id == user.id,
+            Project.is_autosave == True
+        ))
+    )
+    project = result.scalar_one_or_none()
+    if project:
+        project.canvas_size = body.canvas_size
+        project.pages       = body.pages
+        project.updated_at  = datetime.now(timezone.utc)
+    else:
+        project = Project(
+            user_id=user.id,
+            name="__autosave__",
+            canvas_size=body.canvas_size,
+            pages=body.pages,
+            is_autosave=True
+        )
+        db.add(project)
     await db.commit()
-    await db.refresh(project)
-    return {"id": str(project.id), "name": project.name}
+    return {"ok": True}
 
 @router.get("/{project_id}")
 async def get_project(
@@ -132,53 +190,3 @@ async def delete_project(
     await db.delete(project)
     await db.commit()
     return {"ok": True}
-
-# ── Autosave (upsert — one row per user) ───────────
-@router.put("/autosave/current")
-async def autosave(
-    body: AutosaveSave,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(
-        select(Project).where(and_(
-            Project.user_id == user.id,
-            Project.is_autosave == True
-        ))
-    )
-    project = result.scalar_one_or_none()
-    if project:
-        project.canvas_size = body.canvas_size
-        project.pages       = body.pages
-        project.updated_at  = datetime.now(timezone.utc)
-    else:
-        project = Project(
-            user_id=user.id,
-            name="__autosave__",
-            canvas_size=body.canvas_size,
-            pages=body.pages,
-            is_autosave=True
-        )
-        db.add(project)
-    await db.commit()
-    return {"ok": True}
-
-@router.get("/autosave/current")
-async def get_autosave(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(
-        select(Project).where(and_(
-            Project.user_id == user.id,
-            Project.is_autosave == True
-        ))
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        return None
-    return {
-        "canvas_size": project.canvas_size,
-        "pages": project.pages,
-        "updated_at": project.updated_at.isoformat(),
-    }
