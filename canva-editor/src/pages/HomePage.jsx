@@ -77,10 +77,10 @@ const STARTER_TEMPLATES = [
 function TemplatePreview({ tpl }) {
   if (tpl.isBlank) {
     return (
-      <div className="w-full aspect-video rounded-lg border-2 border-dashed flex items-center justify-center group-hover:border-velox-cyan group-hover:bg-velox-cyan-dim transition-all duration-200" style={{ borderColor: "var(--border)" }}>
+      <div className="w-full aspect-video rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center group-hover:border-blue-400 group-hover:bg-blue-50 transition-all duration-200">
         <div className="flex flex-col items-center gap-1">
-          <Plus size={20} className="group-hover:text-velox-cyan transition-colors" style={{ color: "var(--text-lo)" }} />
-          <span className="text-[9px] font-semibold tracking-widest uppercase group-hover:text-velox-cyan transition-colors" style={{ color: "var(--text-lo)" }}>Blank</span>
+          <Plus size={20} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+          <span className="text-[9px] font-semibold tracking-widest uppercase text-gray-400 group-hover:text-blue-500 transition-colors">Blank</span>
         </div>
       </div>
     );
@@ -90,8 +90,8 @@ function TemplatePreview({ tpl }) {
 
   return (
     <div
-      className={`w-full aspect-video rounded-lg overflow-hidden relative transition-all duration-200 group-hover:shadow-xl group-hover:-translate-y-0.5`}
-      style={{ background: bg, boxShadow: border ? "0 0 0 1px rgba(255,255,255,0.1)" : undefined }}
+      className="w-full aspect-video rounded-lg overflow-hidden relative transition-all duration-200 group-hover:shadow-lg group-hover:-translate-y-0.5"
+      style={{ background: bg, boxShadow: border ? "0 0 0 1px #e5e7eb" : undefined }}
     >
       {preview === "pitch" && (
         <svg viewBox="0 0 160 90" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
@@ -165,8 +165,8 @@ function TemplatePreview({ tpl }) {
       )}
 
       {tag && (
-        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded" style={{ background: "var(--cyan)", color: "var(--text-inv)" }}>
-          <span className="text-[7px] font-bold tracking-widest uppercase">{tag}</span>
+        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-blue-600">
+          <span className="text-[7px] font-bold tracking-widest uppercase text-white">{tag}</span>
         </div>
       )}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg" />
@@ -288,14 +288,11 @@ function ProjectCard({ project, onOpen, onDelete, onRename }) {
 
   return (
     <div
-      className="group rounded-2xl overflow-hidden cursor-pointer flex flex-col transition-all duration-200"
-      style={{ background: "var(--card)", border: "1px solid var(--border)" }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(45,212,240,0.3)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.4)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = ""; }}
+      className="group rounded-xl overflow-hidden cursor-pointer flex flex-col transition-all duration-200 bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md"
       onClick={() => !menuOpen && !renaming && onOpen(project)}
     >
       {/* Thumbnail area */}
-      <div className="relative aspect-video overflow-hidden" style={{ background: "var(--card2)" }}>
+      <div className="relative aspect-video overflow-hidden bg-gray-100">
         {project.thumbnail_url ? (
           <img src={project.thumbnail_url} alt={project.name} className="w-full h-full object-cover" />
         ) : (
@@ -308,8 +305,8 @@ function ProjectCard({ project, onOpen, onDelete, onRename }) {
           </div>
         )}
 
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200 flex items-center justify-center">
-          <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 text-xs font-bold px-4 py-2 rounded-xl shadow-xl flex items-center gap-1.5" style={{ background: "var(--card)", color: "var(--text-hi)" }}>
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
+          <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 text-xs font-bold px-4 py-2 rounded-xl shadow-xl flex items-center gap-1.5 bg-white text-gray-900">
             <Edit3 size={11} /> Open
           </div>
         </div>
@@ -319,8 +316,7 @@ function ProjectCard({ project, onOpen, onDelete, onRename }) {
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
-              className="p-1.5 rounded-lg shadow-md transition-colors"
-              style={{ background: "rgba(8,12,20,0.85)", color: "var(--text-mid)" }}
+              className="p-1.5 rounded-lg shadow-md bg-white/90 text-gray-600 hover:bg-white transition-colors"
             >
               <MoreHorizontal size={13} />
             </button>
@@ -328,8 +324,7 @@ function ProjectCard({ project, onOpen, onDelete, onRename }) {
               <>
                 <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} />
                 <div
-                  className="absolute right-0 top-full mt-1 w-40 rounded-xl shadow-xl z-20 py-1"
-                  style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+                  className="absolute right-0 top-full mt-1 w-40 rounded-xl shadow-xl z-20 py-1 bg-white border border-gray-200"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {[
@@ -339,18 +334,15 @@ function ProjectCard({ project, onOpen, onDelete, onRename }) {
                     { label: "Delete", icon: Trash2, onClick: () => { setMenuOpen(false); onDelete(project.id); }, danger: true },
                   ].map((item, i) =>
                     item === null ? (
-                      <div key={i} className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
+                      <div key={i} className="my-1 mx-2 border-t border-gray-100" />
                     ) : (
                       <button
                         key={item.label}
                         type="button"
                         onClick={item.onClick}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-                        style={{ color: item.danger ? "#f87171" : "var(--text-hi)" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = item.danger ? "rgba(239,68,68,0.1)" : "var(--card2)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-gray-50 ${item.danger ? "text-red-500 hover:bg-red-50" : "text-gray-700 hover:text-gray-900"}`}
                       >
-                        <item.icon size={13} style={{ color: item.danger ? "#f87171" : "var(--text-lo)" }} />
+                        <item.icon size={13} className={item.danger ? "text-red-400" : "text-gray-400"} />
                         {item.label}
                       </button>
                     )
@@ -363,7 +355,7 @@ function ProjectCard({ project, onOpen, onDelete, onRename }) {
       </div>
 
       {/* Info footer */}
-      <div className="px-3 py-2.5 flex-1 flex flex-col justify-center" style={{ background: "var(--card)" }}>
+      <div className="px-3 py-2.5 flex-1 flex flex-col justify-center bg-white">
         {renaming ? (
           <input
             autoFocus
@@ -375,14 +367,13 @@ function ProjectCard({ project, onOpen, onDelete, onRename }) {
               if (e.key === "Escape") { setNameVal(project.name); setRenaming(false); }
             }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full text-sm font-semibold rounded-lg px-2 py-1 focus:outline-none"
-            style={{ background: "var(--card2)", border: "1px solid var(--cyan)", color: "var(--text-hi)" }}
+            className="w-full text-sm font-semibold rounded-lg px-2 py-1 focus:outline-none border border-blue-400 text-gray-900 bg-white"
           />
         ) : (
-          <p className="text-[13px] font-semibold truncate leading-snug" style={{ color: "var(--text-hi)" }}>{project.name}</p>
+          <p className="text-[13px] font-semibold truncate leading-snug text-gray-900">{project.name}</p>
         )}
         {updatedAt && (
-          <p className="text-[11px] mt-0.5 flex items-center gap-1" style={{ color: "var(--text-lo)" }}>
+          <p className="text-[11px] mt-0.5 flex items-center gap-1 text-gray-400">
             <Clock size={10} /> {updatedAt}
           </p>
         )}
@@ -468,12 +459,10 @@ export default function HomePage() {
     newDesign();
 
     if (!tpl.isBlank) {
-      // Canvas size: standard PowerPoint 16:9 widescreen (1280×720)
       const canvasW = 1280;
       const canvasH = 720;
       setCanvasSize({ width: canvasW, height: canvasH, backgroundColor: tpl.bg ?? "#ffffff" });
 
-      // Map template id → layout ids for each slide
       const TEMPLATE_LAYOUTS = {
         business: ["title-center", "title-bullets", "two-column", "big-number"],
         corporate: ["title-center", "title-bullets", "two-column", "image-right"],
@@ -485,7 +474,7 @@ export default function HomePage() {
       const layoutIds = TEMPLATE_LAYOUTS[tpl.id] ?? ["title-center", "title-bullets"];
       const layoutMap = Object.fromEntries(LAYOUT_DEFINITIONS.map((l) => [l.id, l]));
       const textColor = tpl.bg === "#ffffff" ? "#111111" : "#ffffff";
-      const accentColor = tpl.accent ?? "#2DD4F0";
+      const accentColor = tpl.accent ?? "#2563eb";
 
       const slides = layoutIds.map((lid) => {
         const layout = layoutMap[lid];
@@ -513,13 +502,13 @@ export default function HomePage() {
   const firstNameInitial = userEmail ? userEmail[0].toUpperCase() : "?";
 
   return (
-    <div className="min-h-screen flex" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen flex bg-gray-50">
 
       {/* ── Left Sidebar ──────────────────────────────────────────────── */}
-      <aside className="w-56 flex-shrink-0 flex flex-col sticky top-0 h-screen" style={{ background: "var(--bg-deep)", borderRight: "1px solid var(--border)" }}>
+      <aside className="w-56 flex-shrink-0 flex flex-col sticky top-0 h-screen bg-white border-r border-gray-200">
         {/* Logo */}
-        <div className="px-5 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
-          <VeloxDecksLogo size="sm" />
+        <div className="px-5 py-5 border-b border-gray-100">
+          <VeloxDecksLogo size="sm" theme="light" />
         </div>
 
         {/* New button */}
@@ -527,8 +516,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={handleCreateNew}
-            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-xl transition-all hover:opacity-90"
-            style={{ background: "var(--cyan)", color: "var(--text-inv)" }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors"
           >
             <Plus size={16} /> New design
           </button>
@@ -536,11 +524,11 @@ export default function HomePage() {
 
         {/* Nav items */}
         <nav className="flex-1 px-3 space-y-0.5">
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg" style={{ background: "var(--cyan-dim)", color: "var(--cyan)" }}>
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-blue-50 text-blue-600">
             <LayoutTemplate size={15} />
             <span className="text-sm font-semibold">Home</span>
           </div>
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-default transition-colors" style={{ color: "var(--text-lo)" }}>
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-gray-400 cursor-default">
             <Clock size={15} />
             <span className="text-sm font-medium">Recent</span>
           </div>
@@ -548,10 +536,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => navigate("/admin")}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
-              style={{ color: "var(--text-lo)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--card2)"; e.currentTarget.style.color = "var(--text-hi)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "var(--text-lo)"; }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
             >
               <Shield size={15} />
               <span className="text-sm font-medium">Admin</span>
@@ -560,19 +545,16 @@ export default function HomePage() {
         </nav>
 
         {/* User footer */}
-        <div className="px-4 py-4" style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="px-4 py-4 border-t border-gray-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0" style={{ background: "var(--cyan-dim)", color: "var(--cyan)", border: "1px solid rgba(45,212,240,0.25)" }}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 bg-blue-100 text-blue-700 border border-blue-200">
               {firstNameInitial}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold truncate" style={{ color: "var(--text-hi)" }}>{userEmail || "Account"}</p>
+              <p className="text-xs font-semibold truncate text-gray-800">{userEmail || "Account"}</p>
             </div>
             <button type="button" onClick={logout} title="Sign out"
-              className="p-1 rounded-md transition-colors flex-shrink-0"
-              style={{ color: "var(--text-lo)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#f87171"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-lo)"; }}
+              className="p-1 rounded-md text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
             >
               <LogOut size={14} />
             </button>
@@ -584,17 +566,17 @@ export default function HomePage() {
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* Top bar */}
-        <header className="h-14 flex items-center px-6 gap-4 flex-shrink-0 sticky top-0 z-20" style={{ background: "rgba(8,12,20,0.85)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--border)" }}>
-          <h1 className="text-[15px] font-bold hidden sm:block" style={{ color: "var(--text-hi)" }}>Home</h1>
+        <header className="h-14 flex items-center px-6 gap-4 flex-shrink-0 sticky top-0 z-20 bg-white border-b border-gray-200">
+          <h1 className="text-[15px] font-bold hidden sm:block text-gray-900">Home</h1>
           <div className="flex-1 max-w-lg mx-auto">
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-lo)" }} />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
               <input
                 type="text"
                 placeholder="Search your projects…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 rounded-xl text-sm focus:outline-none transition-all panel-input"
+                className="w-full pl-8 pr-3 py-2 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
               />
             </div>
           </div>
@@ -604,32 +586,29 @@ export default function HomePage() {
 
           {/* ── AI Banner ──────────────────────────────────────────────── */}
           <section className="mb-10">
-            <div className="rounded-2xl overflow-hidden relative" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-              {/* Cyan glow */}
+            <div className="rounded-2xl overflow-hidden relative bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-700">
               <div className="absolute top-0 right-0 w-96 h-full opacity-20 pointer-events-none"
-                style={{ background: "radial-gradient(ellipse at right, #2DD4F0 0%, transparent 65%)" }} />
-
+                style={{ background: "radial-gradient(ellipse at right, #93c5fd 0%, transparent 65%)" }} />
               <div className="relative z-10 flex items-center gap-6 px-8 py-7">
-                <div className="w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-xl" style={{ background: "var(--cyan-dim)", border: "1px solid rgba(45,212,240,0.3)" }}>
-                  <Sparkles size={22} style={{ color: "var(--cyan)" }} />
+                <div className="w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-xl bg-white/20 border border-white/30">
+                  <Sparkles size={22} className="text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-base" style={{ color: "var(--text-hi)" }}>AI Slide Assistant</span>
-                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest" style={{ color: "var(--cyan)", border: "1px solid rgba(45,212,240,0.3)", background: "var(--cyan-dim)" }}>Beta</span>
+                    <span className="font-bold text-base text-white">AI Slide Assistant</span>
+                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest text-blue-100 border border-white/30 bg-white/10">Beta</span>
                   </div>
-                  <p className="text-sm leading-relaxed max-w-lg" style={{ color: "var(--text-lo)" }}>
+                  <p className="text-sm leading-relaxed max-w-lg text-blue-100">
                     Paste reports, strategy docs, or raw notes — AI turns them into a polished slide deck.
                   </p>
                   <div className="flex gap-2 mt-2.5">
                     {["Smart structure", "Brand-aware", "Editable output"].map(f => (
-                      <span key={f} className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ color: "var(--text-lo)", border: "1px solid var(--border)" }}>{f}</span>
+                      <span key={f} className="text-[10px] font-medium px-2 py-0.5 rounded-full text-blue-100 border border-white/20 bg-white/10">{f}</span>
                     ))}
                   </div>
                 </div>
                 <button type="button" onClick={handleCreateNew}
-                  className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl transition-all hover:opacity-90"
-                  style={{ background: "var(--cyan)", color: "var(--text-inv)" }}>
+                  className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-white text-blue-700 hover:bg-blue-50 transition-colors shadow-md">
                   Try it <ChevronRight size={14} />
                 </button>
               </div>
@@ -639,7 +618,7 @@ export default function HomePage() {
           {/* ── Templates ──────────────────────────────────────────────── */}
           <section className="mb-10">
             <div className="flex items-center gap-2 mb-5">
-              <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-lo)" }}>Start a new presentation</h2>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400">Start a new presentation</h2>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
               {STARTER_TEMPLATES.map((tpl) => (
@@ -648,8 +627,8 @@ export default function HomePage() {
                   className="flex flex-col items-start gap-2 group text-left">
                   <TemplatePreview tpl={tpl} />
                   <div>
-                    <span className="text-[11px] font-semibold block leading-tight transition-colors group-hover:text-velox-cyan" style={{ color: "var(--text-hi)" }}>{tpl.name}</span>
-                    <p className="text-[10px] mt-0.5" style={{ color: "var(--text-lo)" }}>{tpl.description}</p>
+                    <span className="text-[11px] font-semibold block leading-tight text-gray-800 group-hover:text-blue-600 transition-colors">{tpl.name}</span>
+                    <p className="text-[10px] mt-0.5 text-gray-400">{tpl.description}</p>
                   </div>
                 </button>
               ))}
@@ -659,42 +638,41 @@ export default function HomePage() {
           {/* ── Recent Projects ────────────────────────────────────────── */}
           <section>
             <div className="flex items-center gap-2 mb-5">
-              <h2 className="text-xs font-bold uppercase tracking-widest flex-1" style={{ color: "var(--text-lo)" }}>Recent projects</h2>
+              <h2 className="text-xs font-bold uppercase tracking-widest flex-1 text-gray-400">Recent projects</h2>
               {projects.length > 0 && (
-                <span className="text-xs" style={{ color: "var(--text-lo)" }}>{projects.length} project{projects.length !== 1 ? "s" : ""}</span>
+                <span className="text-xs text-gray-400">{projects.length} project{projects.length !== 1 ? "s" : ""}</span>
               )}
             </div>
 
             {loading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="rounded-xl overflow-hidden animate-pulse" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-                    <div className="aspect-video" style={{ background: "var(--card2)" }} />
+                  <div key={i} className="rounded-xl overflow-hidden animate-pulse bg-white border border-gray-200">
+                    <div className="aspect-video bg-gray-200" />
                     <div className="px-3 py-2.5 space-y-1.5">
-                      <div className="h-3 rounded w-3/4" style={{ background: "var(--card2)" }} />
-                      <div className="h-2 rounded w-1/2" style={{ background: "var(--card2)" }} />
+                      <div className="h-3 rounded bg-gray-200 w-3/4" />
+                      <div className="h-2 rounded bg-gray-100 w-1/2" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center rounded-2xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+              <div className="flex flex-col items-center justify-center py-24 text-center rounded-2xl bg-white border border-gray-200">
                 {search ? (
                   <>
-                    <Search size={32} className="mb-3" style={{ color: "var(--text-lo)" }} />
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-mid)" }}>No results for "{search}"</p>
-                    <p className="text-xs mt-1" style={{ color: "var(--text-lo)" }}>Try a different search term</p>
+                    <Search size={32} className="mb-3 text-gray-300" />
+                    <p className="text-sm font-semibold text-gray-600">No results for "{search}"</p>
+                    <p className="text-xs mt-1 text-gray-400">Try a different search term</p>
                   </>
                 ) : (
                   <>
-                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: "var(--cyan-dim)" }}>
-                      <LayoutTemplate size={28} style={{ color: "var(--cyan)" }} />
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-blue-50">
+                      <LayoutTemplate size={28} className="text-blue-500" />
                     </div>
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-hi)" }}>No presentations yet</p>
-                    <p className="text-xs mt-1.5 mb-6 max-w-xs" style={{ color: "var(--text-lo)" }}>Pick a template above or start from a blank canvas to create your first deck.</p>
+                    <p className="text-sm font-semibold text-gray-800">No presentations yet</p>
+                    <p className="text-xs mt-1.5 mb-6 max-w-xs text-gray-400">Pick a template above or start from a blank canvas to create your first deck.</p>
                     <button type="button" onClick={handleCreateNew}
-                      className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl transition-opacity hover:opacity-90"
-                      style={{ background: "var(--cyan)", color: "var(--text-inv)" }}>
+                      className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors">
                       <Plus size={15} /> New presentation
                     </button>
                   </>

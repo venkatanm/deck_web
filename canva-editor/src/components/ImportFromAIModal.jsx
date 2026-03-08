@@ -126,9 +126,9 @@ export default function ImportFromAIModal({ onClose }) {
     }
   };
 
-  const handleOpenInDeckWeb = () => {
+  const handleOpenInVeloxDecks = () => {
     const schema = result?.canva_schema;
-    if (!schema) { setError("No schema available to open in DeckWeb."); return; }
+    if (!schema) { setError("No schema available to open in Velox Decks."); return; }
     const { valid, errors } = validateContentSchema(schema);
     if (!valid) { setError("Schema errors:\n" + errors.join("\n")); return; }
     doImport(schema);
@@ -283,11 +283,11 @@ export default function ImportFromAIModal({ onClose }) {
                       </p>
                       {result.canva_schema && (
                         <button
-                          onClick={handleOpenInDeckWeb}
+                          onClick={handleOpenInVeloxDecks}
                           className="w-full py-3 bg-purple-600 text-white text-sm rounded-xl font-medium hover:bg-purple-700 flex items-center justify-center gap-2"
                         >
                           <FolderOpen className="w-4 h-4" />
-                          Open in DeckWeb
+                          Open in Velox Decks
                         </button>
                       )}
                       {result.pptx_url && (
@@ -333,7 +333,7 @@ export default function ImportFromAIModal({ onClose }) {
                     className="w-full py-3 bg-purple-600 text-white text-sm rounded-xl font-medium hover:bg-purple-700 disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     <Wand2 className="w-4 h-4" />
-                    Open in DeckWeb
+                    Open in Velox Decks
                   </button>
                 </div>
               )}

@@ -790,8 +790,8 @@ function LayoutPreviewIcon({ layout }) {
     <svg
       width="100%"
       viewBox="0 0 160 90"
-      className="flex-shrink-0 bg-white rounded-lg w-full border border-gray-100"
-      style={{ height: 56 }}
+      className="flex-shrink-0 bg-white rounded-lg w-full border border-gray-200"
+      style={{ height: 80 }}
     >
       {preview ?? (
         <rect x="4" y="4" width="152" height="82" rx="4" fill="#f0f0f0" />

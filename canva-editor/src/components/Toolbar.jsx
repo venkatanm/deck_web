@@ -87,7 +87,7 @@ const ToolBtn = ({ onClick, active, disabled, title, children }) => (
     className={`
       p-1.5 rounded-md text-sm flex items-center justify-center
       transition-colors duration-100 flex-shrink-0
-      ${active ? "bg-velox-cyan-dim text-velox-cyan" : "text-velox-text-mid hover:bg-velox-card2 hover:text-velox-text-hi"}
+      ${active ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"}
       ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
     `}
   >
@@ -125,10 +125,10 @@ const ColorPickerBtn = ({ color, onChange, title }) => {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden="true" />
-          <div className="absolute top-10 left-0 z-50 rounded-xl shadow-2xl p-3 min-w-[200px] border" style={{ background: "var(--card2)", borderColor: "var(--border)" }}>
+          <div className="absolute top-10 left-0 z-50 rounded-xl shadow-2xl p-3 min-w-[200px] border border-gray-200 bg-white">
             {brandColors.length > 0 && (
               <div className="mb-2">
-                <p className="text-[9px] text-purple-600 font-bold uppercase tracking-wide mb-1.5 px-0.5">
+                <p className="text-[9px] text-blue-600 font-bold uppercase tracking-wide mb-1.5 px-0.5">
                   Brand Colors
                 </p>
                 <div className="flex flex-wrap gap-1.5 mb-2">
@@ -154,7 +154,7 @@ const ColorPickerBtn = ({ color, onChange, title }) => {
                   handleChange(e.target.value || "#000000");
                 }
               }}
-              className="mt-2 w-full text-center text-xs rounded-md px-2 py-1 font-mono panel-input"
+              className="mt-2 w-full text-center text-xs rounded-md px-2 py-1 font-mono bg-gray-50 border border-gray-200 text-gray-800 focus:outline-none focus:border-blue-400"
               maxLength={7}
             />
           </div>
@@ -166,7 +166,7 @@ const ColorPickerBtn = ({ color, onChange, title }) => {
 
 const OpacityControl = ({ value, onChange }) => (
   <div className="flex items-center gap-2 flex-shrink-0">
-    <span className="text-xs text-velox-text-lo w-14 text-right flex-shrink-0">
+    <span className="text-xs text-gray-400 w-14 text-right flex-shrink-0">
       {Math.round((value ?? 1) * 100)}%
     </span>
     <input
@@ -175,14 +175,14 @@ const OpacityControl = ({ value, onChange }) => (
       max={100}
       value={Math.round((value ?? 1) * 100)}
       onChange={(e) => onChange(Number(e.target.value) / 100)}
-      className="w-20 accent-purple-600 cursor-pointer"
+      className="w-20 accent-blue-600 cursor-pointer"
     />
   </div>
 );
 
 const NumberInput = ({ label, value, onChange, min, max, step = 1, width = "w-14" }) => (
   <div className="flex items-center gap-1 flex-shrink-0">
-    {label && <span className="text-xs text-velox-text-lo">{label}</span>}
+    {label && <span className="text-xs text-gray-400">{label}</span>}
     <input
       type="number"
       value={value}
@@ -193,7 +193,7 @@ const NumberInput = ({ label, value, onChange, min, max, step = 1, width = "w-14
         const v = Number(e.target.value);
         if (!Number.isNaN(v)) onChange(v);
       }}
-      className={`${width} text-xs rounded-md px-2 py-1 text-center focus:outline-none panel-input`}
+      className={`${width} text-xs rounded-md px-2 py-1 text-center focus:outline-none bg-gray-50 border border-gray-200 text-gray-800 focus:border-blue-400`}
     />
   </div>
 );
@@ -202,7 +202,7 @@ const SelectInput = ({ value, onChange, options, width = "w-32" }) => (
   <select
     value={value}
     onChange={(e) => onChange(e.target.value)}
-    className={`${width} text-xs rounded-md px-2 py-1 focus:outline-none panel-input cursor-pointer`}
+    className={`${width} text-xs rounded-md px-2 py-1 focus:outline-none bg-gray-50 border border-gray-200 text-gray-800 focus:border-blue-400 cursor-pointer`}
   >
     {options.map((o) => (
       <option key={o.value} value={o.value}>
@@ -326,10 +326,10 @@ function DefaultToolbar() {
 
   if (drawMode) {
     return (
-      <div className="h-12 px-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
+      <div className="h-12 px-4 flex items-center gap-2 bg-white border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <Pencil className="w-4 h-4 text-velox-cyan" />
-          <span className="text-sm font-medium text-velox-cyan">Drawing Mode</span>
+          <Pencil className="w-4 h-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-600">Drawing Mode</span>
         </div>
         <Divider />
         <div className="flex flex-col items-center">
@@ -338,30 +338,29 @@ function DefaultToolbar() {
             onChange={setDrawColor}
             title="Draw color"
           />
-          <span className="text-[10px] text-velox-text-lo">Color</span>
+          <span className="text-[10px] text-gray-400">Color</span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-xs text-velox-text-lo">Size</span>
+          <span className="text-xs text-gray-400">Size</span>
           <input
             type="range"
             min={1}
             max={40}
             value={drawSize}
             onChange={(e) => setDrawSize(Number(e.target.value))}
-            className="w-24 accent-purple-600 cursor-pointer"
+            className="w-24 accent-blue-600 cursor-pointer"
           />
-          <span className="text-xs text-velox-text-mid w-6">{drawSize}px</span>
+          <span className="text-xs text-gray-600 w-6">{drawSize}px</span>
         </div>
         <Divider />
         <button
           type="button"
           onClick={() => setDrawMode(false)}
-          className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
-          style={{ background: "var(--cyan)", color: "var(--text-inv)" }}
+          className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-700"
         >
           Done Drawing
         </button>
-        <div className="ml-auto text-xs text-velox-text-lo">
+        <div className="ml-auto text-xs text-gray-400">
           Page {currentPageIndex} of {pages.length}
         </div>
       </div>
@@ -369,8 +368,8 @@ function DefaultToolbar() {
   }
 
   return (
-    <div className="h-12 px-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
-      <span className="text-xs text-velox-text-mid flex-shrink-0">
+    <div className="h-12 px-4 flex items-center gap-2 bg-white border-b border-gray-200">
+      <span className="text-xs text-gray-500 flex-shrink-0">
         {canvasSize.width} × {canvasSize.height}
       </span>
       <Divider />
@@ -380,7 +379,7 @@ function DefaultToolbar() {
       <button
         type="button"
         onClick={() => setZoom(1)}
-        className="text-xs text-velox-text-mid hover:text-velox-cyan min-w-[3rem] px-1"
+        className="text-xs text-gray-600 hover:text-blue-600 min-w-[3rem] px-1"
         title="Reset to 100%"
       >
         {Math.round(zoom * 100)}%
@@ -401,7 +400,7 @@ function DefaultToolbar() {
       <ToolBtn onClick={toggleSnap} title="Toggle snap to guides" active={snapEnabled}>
         <Magnet className="w-4 h-4" />
       </ToolBtn>
-      <div className="ml-auto text-xs text-velox-text-lo">
+      <div className="ml-auto text-xs text-gray-400">
         Page {currentPageIndex} of {pages.length}
       </div>
     </div>
@@ -413,14 +412,14 @@ function ShapeToolbar({ el, update }) {
   const moveElementDown = useEditorStore((s) => s.moveElementDown);
 
   return (
-    <div className="h-12 px-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
+    <div className="h-12 px-4 flex items-center gap-2 bg-white border-b border-gray-200">
       <div className="flex flex-col items-center">
         <ColorPickerBtn
           color={el.fill || "#c084fc"}
           onChange={(c) => update({ fill: c })}
           title="Fill color"
         />
-        <span className="text-[10px] text-velox-text-lo">Fill</span>
+        <span className="text-[10px] text-gray-400">Fill</span>
       </div>
       <div className="flex flex-col items-center">
         <ColorPickerBtn
@@ -428,7 +427,7 @@ function ShapeToolbar({ el, update }) {
           onChange={(c) => update({ stroke: c })}
           title="Stroke color"
         />
-        <span className="text-[10px] text-velox-text-lo">Stroke</span>
+        <span className="text-[10px] text-gray-400">Stroke</span>
       </div>
       <NumberInput
         label="Stroke"
@@ -488,9 +487,9 @@ function DrawingToolbar({ el, update }) {
   const deleteElement = useEditorStore((s) => s.deleteElement);
 
   return (
-    <div className="h-12 px-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
+    <div className="h-12 px-4 flex items-center gap-2 bg-white border-b border-gray-200">
       <div className="flex items-center gap-2">
-        <Pencil className="w-4 h-4 text-purple-600" />
+        <Pencil className="w-4 h-4 text-blue-600" />
         <span className="text-sm font-medium text-gray-700">Drawing</span>
       </div>
       <Divider />
@@ -538,7 +537,7 @@ function ImageToolbar({ el, update }) {
   };
 
   return (
-    <div className="h-12 px-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
+    <div className="h-12 px-4 flex items-center gap-2 bg-white border-b border-gray-200">
       <OpacityControl value={el.opacity} onChange={(v) => update({ opacity: v })} />
       <Divider />
       <AlignmentGroup el={el} />

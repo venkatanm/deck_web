@@ -11,50 +11,95 @@ import { CHART_COLOR_SCHEMES } from "./defaults";
 import useEditorStore from "../store/useEditorStore";
 import StatBlockElement from "../components/StatBlockElement";
 import TimelineElement from "../components/TimelineElement";
+import TableElement from "../components/TableElement";
+import GraphicElement from "../components/GraphicElement";
 
 const HEART_PATH = "M28 46 C28 46 8 34 8 20 C8 13 13 8 20 8 C24 8 28 12 28 12 C28 12 32 8 36 8 C43 8 48 13 48 20 C48 34 28 46 28 46Z";
 const DIAMOND_PATH = "M28,4 L52,28 L28,52 L4,28 Z";
 
+// Render a React element offscreen via html2canvas and return an HTMLImageElement
+async function reactElementToImage(reactEl, width, height) {
+  const div = document.createElement("div");
+  div.style.cssText = `position:fixed;left:-9999px;top:0;width:${width}px;height:${height}px;overflow:hidden;`;
+  document.body.appendChild(div);
+  const root = createRoot(div);
+  root.render(reactEl);
+  await new Promise((r) => setTimeout(r, 200));
+  let img = null;
+  try {
+    const canvas = await html2canvas(div.firstChild || div, {
+      scale: 1,
+      backgroundColor: null,
+      useCORS: true,
+    });
+    img = new window.Image();
+    img.src = canvas.toDataURL("image/png");
+    await new Promise((r) => { img.onload = r; img.onerror = r; });
+  } catch (e) {
+    console.warn("reactElementToImage error", e);
+  }
+  root.unmount();
+  document.body.removeChild(div);
+  return img;
+}
+
+const COMPLEX_TYPES = new Set(["statBlock", "chart", "table", "timeline", "callout", "frame", "flowchart", "graphic", "connector"]);
+
 export async function pageToDataURL(page, canvasSize, scale = 1, mimeType = "image/png") {
+  const container = document.createElement("div");
+  container.style.display = "none";
+  document.body.appendChild(container);
+
+  const stage = new Konva.Stage({
+    container,
+    width: canvasSize.width * scale,
+    height: canvasSize.height * scale,
+  });
+
+  const layer = new Konva.Layer();
+  stage.add(layer);
+
+  const bg = new Konva.Rect({
+    width: canvasSize.width * scale,
+    height: canvasSize.height * scale,
+    fill: canvasSize.backgroundColor || "#ffffff",
+  });
+  layer.add(bg);
+
+  // Pre-load regular images
+  const imageElements = (page.elements || []).flatMap((el) =>
+    el.type === "group"
+      ? (el.children || []).filter((c) => c.type === "image")
+      : el.type === "image"
+        ? [el]
+        : []
+  );
+  const loadedImages = await Promise.all(imageElements.map((el) =>
+    new Promise((res) => {
+      const img = new window.Image();
+      img.onload = () => res({ id: el.id, img });
+      img.onerror = () => res({ id: el.id, img: null });
+      img.src = el.src || "";
+    })
+  ));
+  const imageMap = Object.fromEntries(loadedImages.map((i) => [i.id, i.img]));
+
+  // Pre-render complex React elements to images
+  const complexMap = {};
+  for (const el of (page.elements || [])) {
+    if (!COMPLEX_TYPES.has(el.type)) continue;
+    let reactEl = null;
+    if (el.type === "statBlock") reactEl = React.createElement(StatBlockElement, { el: { ...el, x: 0, y: 0 }, zoom: 1 });
+    else if (el.type === "timeline") reactEl = React.createElement(TimelineElement, { el: { ...el, x: 0, y: 0 }, zoom: 1 });
+    else if (el.type === "table") reactEl = React.createElement(TableElement, { el: { ...el, x: 0, y: 0 }, zoom: 1 });
+    else if (el.type === "graphic") reactEl = React.createElement(GraphicElement, { el: { ...el, x: 0, y: 0 }, zoom: 1 });
+    if (reactEl) {
+      const img = await reactElementToImage(reactEl, el.width, el.height);
+      if (img) complexMap[el.id] = img;
+    }
+  }
+
   return new Promise((resolve) => {
-    const container = document.createElement("div");
-    container.style.display = "none";
-    document.body.appendChild(container);
-
-    const stage = new Konva.Stage({
-      container,
-      width: canvasSize.width * scale,
-      height: canvasSize.height * scale,
-    });
-
-    const layer = new Konva.Layer();
-    stage.add(layer);
-
-    const bg = new Konva.Rect({
-      width: canvasSize.width * scale,
-      height: canvasSize.height * scale,
-      fill: canvasSize.backgroundColor || "#ffffff",
-    });
-    layer.add(bg);
-
-    const imageElements = (page.elements || []).flatMap((el) =>
-      el.type === "group"
-        ? (el.children || []).filter((c) => c.type === "image")
-        : el.type === "image"
-          ? [el]
-          : []
-    );
-    const imagePromises = imageElements.map((el) =>
-      new Promise((res) => {
-        const img = new window.Image();
-        img.onload = () => res({ id: el.id, img });
-        img.onerror = () => res({ id: el.id, img: null });
-        img.src = el.src || "";
-      })
-    );
-
-    Promise.all(imagePromises).then((loadedImages) => {
-      const imageMap = Object.fromEntries(loadedImages.map((i) => [i.id, i.img]));
 
       (page.elements || []).forEach((el) => {
         let node;
@@ -316,8 +361,19 @@ export async function pageToDataURL(page, canvasSize, scale = 1, mimeType = "ima
             });
             break;
           }
-          default:
+          default: {
+            // Complex React-rendered element — use pre-rendered image
+            const complexImg = complexMap[el.id];
+            if (complexImg) {
+              node = new Konva.Image({
+                ...common,
+                image: complexImg,
+                width: el.width * scale,
+                height: el.height * scale,
+              });
+            }
             break;
+          }
         }
         if (node) layer.add(node);
       });
@@ -327,7 +383,6 @@ export async function pageToDataURL(page, canvasSize, scale = 1, mimeType = "ima
       stage.destroy();
       document.body.removeChild(container);
       resolve(dataURL);
-    });
   });
 }
 

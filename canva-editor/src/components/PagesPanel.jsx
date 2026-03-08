@@ -90,7 +90,7 @@ function SortablePageThumb({ page, index, isActive, isSelected, stableId, onSele
       onClick={(e) => { onSelect(index, e.shiftKey, e.ctrlKey || e.metaKey); setCurrentPage(page.id); }}
       onContextMenu={handleContextMenu}
     >
-      <p className="absolute top-0 left-0 text-[10px] -translate-y-4" style={{ color: "var(--text-lo)" }}>
+      <p className="absolute top-0 left-0 text-[10px] -translate-y-4 text-gray-400 font-medium">
         {index + 1}
       </p>
       <div
@@ -99,17 +99,17 @@ function SortablePageThumb({ page, index, isActive, isSelected, stableId, onSele
           width: thumbWidth,
           height: thumbHeight,
           borderColor: isActive
-            ? "var(--cyan)"
+            ? "#2563eb"
             : isSelected
-            ? "rgba(45,212,240,0.4)"
-            : "transparent",
-          boxShadow: isActive ? "0 0 0 2px rgba(45,212,240,0.2)" : undefined,
+            ? "#93c5fd"
+            : "#d1d5db",
+          boxShadow: isActive ? "0 0 0 2px rgba(37,99,235,0.15)" : undefined,
         }}
       >
         {loading ? (
           <div
-            className="w-full h-full animate-pulse"
-            style={{ width: thumbWidth, height: thumbHeight, background: "var(--card2)" }}
+            className="w-full h-full animate-pulse bg-gray-200"
+            style={{ width: thumbWidth, height: thumbHeight }}
           />
         ) : thumbnail ? (
           <img
@@ -120,8 +120,8 @@ function SortablePageThumb({ page, index, isActive, isSelected, stableId, onSele
           />
         ) : (
           <div
-            className="w-full h-full"
-            style={{ width: thumbWidth, height: thumbHeight, background: "var(--card)" }}
+            className="w-full h-full bg-white"
+            style={{ width: thumbWidth, height: thumbHeight }}
           />
         )}
       </div>
@@ -134,8 +134,8 @@ function SortablePageThumb({ page, index, isActive, isSelected, stableId, onSele
             aria-hidden="true"
           />
           <div
-            className="fixed z-50 rounded-lg shadow-xl py-1 min-w-[140px]"
-            style={{ left: menuPos.x, top: menuPos.y, background: "var(--card)", border: "1px solid var(--border)" }}
+            className="fixed z-50 rounded-lg shadow-xl py-1 min-w-[140px] bg-white border border-gray-200"
+            style={{ left: menuPos.x, top: menuPos.y }}
           >
             {[
               { label: "Duplicate Page", onClick: handleDuplicate, disabled: false },
@@ -148,10 +148,7 @@ function SortablePageThumb({ page, index, isActive, isSelected, stableId, onSele
                 type="button"
                 onClick={onClick}
                 disabled={disabled}
-                className="w-full px-4 py-2 text-left text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                style={{ color: "var(--text-hi)" }}
-                onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.background = "var(--card2)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors hover:bg-gray-50 hover:text-gray-900"
               >
                 {label}
               </button>
@@ -248,58 +245,61 @@ export default function PagesPanel() {
   const currentIndex = (pages || []).findIndex((p) => p.id === currentPageId);
 
   return (
-    <div className="h-[140px] flex items-center gap-3 px-4 overflow-x-auto scrollbar-hide" style={{ background: "var(--bg-deep)", borderTop: "1px solid var(--border)" }}>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={(pages || []).map((_, i) => `page-${i}`)}
-          strategy={horizontalListSortingStrategy}
+    <div className="h-[152px] flex items-center bg-white" style={{ borderTop: "1px solid #e5e7eb" }}>
+      {/* Scrollable slides area */}
+      <div className="flex-1 flex items-center gap-3 px-4 overflow-x-auto h-full" style={{ scrollbarWidth: "thin", scrollbarColor: "#d1d5db #f9fafb" }}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            {(pages || []).filter(Boolean).map((page, index) => (
-              <SortablePageThumb
-                key={`page-${index}`}
-                page={page}
-                index={index}
-                isActive={page.id === currentPageId}
-                isSelected={selectedIndices.has(index)}
-                stableId={`page-${index}`}
-                onSelect={handleSelect}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+          <SortableContext
+            items={(pages || []).map((_, i) => `page-${i}`)}
+            strategy={horizontalListSortingStrategy}
+          >
+            <div className="flex items-center gap-3">
+              {(pages || []).filter(Boolean).map((page, index) => (
+                <SortablePageThumb
+                  key={`page-${index}`}
+                  page={page}
+                  index={index}
+                  isActive={page.id === currentPageId}
+                  isSelected={selectedIndices.has(index)}
+                  stableId={`page-${index}`}
+                  onSelect={handleSelect}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
 
-      {/* Bulk delete button */}
-      {selectedIndices.size > 1 && (
+      {/* Right-pinned controls */}
+      <div className="flex-shrink-0 flex items-center gap-2 px-3 h-full border-l border-gray-200">
+        {/* Bulk delete button */}
+        {selectedIndices.size > 1 && (
+          <button
+            type="button"
+            onClick={handleDeleteSelected}
+            disabled={(pages || []).length <= selectedIndices.size}
+            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium hover:bg-red-100"
+          >
+            <Trash2 size={16} />
+            Delete {selectedIndices.size}
+          </button>
+        )}
+
+        {/* Add page button */}
         <button
           type="button"
-          onClick={handleDeleteSelected}
-          disabled={(pages || []).length <= selectedIndices.size}
-          className="flex-shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
-          style={{ background: "rgba(239,68,68,0.1)", borderColor: "rgba(239,68,68,0.3)", color: "#f87171" }}
+          onClick={addPage}
+          className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center transition-colors text-gray-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50"
+          style={{ width: thumbWidth, height: thumbHeight }}
         >
-          <Trash2 size={16} />
-          Delete {selectedIndices.size}
+          <Plus className="w-6 h-6" />
+          <span className="text-xs mt-1">Add page</span>
         </button>
-      )}
-
-      {/* Add page button */}
-      <button
-        type="button"
-        onClick={addPage}
-        className="flex-shrink-0 border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition-colors"
-        style={{ width: thumbWidth, height: thumbHeight, borderColor: "rgba(107,127,160,0.4)", color: "var(--text-mid)" }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--cyan)"; e.currentTarget.style.color = "var(--cyan)"; e.currentTarget.style.background = "var(--cyan-dim)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(107,127,160,0.4)"; e.currentTarget.style.color = "var(--text-mid)"; e.currentTarget.style.background = ""; }}
-      >
-        <Plus className="w-6 h-6" />
-        <span className="text-xs mt-1">Add page</span>
-      </button>
+      </div>
     </div>
   );
 }

@@ -19,7 +19,6 @@ import { useToast } from "./components/Toast.jsx";
 import GenerationStatusBar from "./components/GenerationStatusBar";
 import AIChatPanel from "./components/AIChatPanel";
 import MicroSurveyToast from "./components/feedback/MicroSurveyToast";
-import FeedbackButton from "./components/feedback/FeedbackButton";
 import { shallow } from "zustand/shallow";
 
 export default function App() {
@@ -205,7 +204,6 @@ export default function App() {
 
       {/* Feedback system — mounts once, self-manages visibility */}
       <MicroSurveyToast />
-      <FeedbackButton />
       </div>
     </>
   );

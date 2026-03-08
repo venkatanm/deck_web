@@ -37,7 +37,7 @@ function PanelSuspense({ children }) {
       fallback={
         <div className="flex flex-col gap-2 p-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-12 rounded-xl animate-pulse" style={{ background: "var(--card2)" }} />
+            <div key={i} className="h-12 rounded-xl animate-pulse bg-gray-100" />
           ))}
         </div>
       }
@@ -112,7 +112,7 @@ export function Sidebar() {
       {/* Icon rail */}
       <aside
         className="w-[80px] h-full flex flex-col items-center py-3 gap-0.5 flex-shrink-0"
-        style={{ background: "var(--bg-deep)", borderRight: "1px solid var(--border)" }}
+        style={{ background: "#ffffff", borderRight: "1px solid #e5e7eb" }}
       >
         {TABS.map(({ id, icon: Icon, label, isDrawMode }) => {
           const isActive = isDrawMode ? drawMode : activeTab === id;
@@ -129,21 +129,21 @@ export function Sidebar() {
               }`}
               style={
                 isActive
-                  ? { background: "var(--cyan-dim)", color: "var(--cyan)" }
-                  : { color: "var(--text-mid)" }
+                  ? { background: "#eff6ff", color: "#2563eb" }
+                  : { color: "#6b7280" }
               }
               onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.color = "var(--text-hi)";
+                if (!isActive) e.currentTarget.style.color = "#111827";
               }}
               onMouseLeave={(e) => {
-                if (!isActive) e.currentTarget.style.color = "var(--text-mid)";
+                if (!isActive) e.currentTarget.style.color = "#6b7280";
               }}
             >
               {/* Active left indicator */}
               {isActive && (
                 <div
                   className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full"
-                  style={{ background: "var(--cyan)" }}
+                  style={{ background: "#2563eb" }}
                 />
               )}
               <Icon size={22} strokeWidth={isActive ? 2 : 1.75} />
@@ -160,8 +160,8 @@ export function Sidebar() {
           width: activeTab ? 288 : 0,
           opacity: activeTab ? 1 : 0,
           minWidth: activeTab ? 288 : 0,
-          background: "var(--bg-deep)",
-          borderRight: "1px solid var(--border)",
+          background: "#ffffff",
+          borderRight: "1px solid #e5e7eb",
         }}
       >
         {panelTabs.map((tab) => {
@@ -173,10 +173,10 @@ export function Sidebar() {
               style={{ display: activeTab === tab.id ? "flex" : "none", flexDirection: "column", height: "100%" }}
             >
               {/* Panel header */}
-              <div className="flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
-                <div className="h-[3px]" style={{ background: "var(--cyan)" }} />
+              <div className="flex-shrink-0" style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                <div className="h-[3px]" style={{ background: "#2563eb" }} />
                 <div className="px-4 py-2.5">
-                  <span className="font-bold text-[13px] tracking-tight" style={{ color: "var(--text-hi)" }}>
+                  <span className="font-bold text-[13px] tracking-tight" style={{ color: "#111827" }}>
                     {tab.label}
                   </span>
                 </div>

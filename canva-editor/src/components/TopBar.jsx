@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { RotateCcw, RotateCw, Share2, Download, Play, HelpCircle, Wand2, LogOut, MessageSquarePlus } from "lucide-react";
+import { RotateCcw, RotateCw, Share2, Download, Play, HelpCircle, Wand2, LogOut, MessageSquarePlus, Sparkles } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
 import ImportFromAIModal from "./ImportFromAIModal";
 import FileMenu from "./FileMenu";
@@ -14,7 +14,7 @@ const ToolBtn = ({ onClick, disabled, title, children }) => (
     onClick={onClick}
     disabled={disabled}
     title={title}
-    className="p-2 rounded-btn hover:bg-velox-card2 disabled:opacity-25 disabled:cursor-not-allowed transition-colors text-velox-text-mid hover:text-velox-text-hi"
+    className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-25 disabled:cursor-not-allowed transition-colors text-gray-500 hover:text-gray-800"
   >
     {children}
   </button>
@@ -60,7 +60,7 @@ export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onT
   };
 
   return (
-    <header className="h-12 flex-shrink-0 flex items-center px-3 gap-2 border-b" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+    <header className="h-12 flex-shrink-0 flex items-center px-3 gap-2 border-b border-gray-200 bg-white">
 
       {/* Left — logo + file menu + undo/redo */}
       <div className="flex items-center gap-1.5">
@@ -70,12 +70,12 @@ export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onT
           className="flex items-center hover:opacity-80 transition-opacity flex-shrink-0 mr-1"
           title="Home"
         >
-          <VeloxDecksLogo size="sm" />
+          <VeloxDecksLogo size="sm" theme="light" />
         </button>
 
-        <div className="w-px h-5 mx-1" style={{ background: "var(--border)" }} />
+        <div className="w-px h-5 mx-1 bg-gray-200" />
         <FileMenu onDownload={onDownload} />
-        <div className="w-px h-4 mx-0.5" style={{ background: "var(--border)" }} />
+        <div className="w-px h-4 mx-0.5 bg-gray-200" />
 
         <ToolBtn onClick={undo} disabled={!history.length} title="Undo (Ctrl+Z)">
           <RotateCcw size={16} strokeWidth={1.5} />
@@ -95,22 +95,13 @@ export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onT
             onBlur={handleTitleBlur}
             onKeyDown={handleTitleKeyDown}
             autoFocus
-            className="text-sm font-medium min-w-36 max-w-72 w-auto text-center rounded-btn px-3 py-1 focus:outline-none focus:ring-2"
-            style={{
-              background: "var(--card2)",
-              border: "1px solid var(--cyan)",
-              color: "var(--text-hi)",
-              boxShadow: "0 0 0 3px var(--cyan-glow)",
-            }}
+            className="text-sm font-medium min-w-36 max-w-72 w-auto text-center rounded-lg px-3 py-1 focus:outline-none border border-blue-400 ring-2 ring-blue-100 text-gray-900 bg-white"
           />
         ) : (
           <button
             type="button"
             onClick={() => setEditingTitle(true)}
-            className="text-sm font-medium min-w-36 max-w-72 px-3 py-1 rounded-btn border border-transparent transition-all truncate"
-            style={{ color: "var(--text-mid)" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card2)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.background = "transparent"; }}
+            className="text-sm font-medium min-w-36 max-w-72 px-3 py-1 rounded-lg border border-transparent text-gray-700 hover:border-gray-200 hover:bg-gray-50 transition-all truncate"
           >
             {title || "Untitled Design"}
           </button>
@@ -123,22 +114,21 @@ export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onT
         <button
           type="button"
           onClick={onToggleAIChat}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-btn transition-all"
-          style={showAIChat
-            ? { background: "var(--cyan-dim)", color: "var(--cyan)", border: "1px solid rgba(45,212,240,0.4)" }
-            : { background: "var(--card2)", color: "var(--text-mid)", border: "1px solid var(--border)" }
-          }
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+            showAIChat
+              ? "bg-blue-50 text-blue-600 border-blue-300"
+              : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-800"
+          }`}
         >
-          <MessageSquarePlus size={13} strokeWidth={1.5} />
-          Velox AI
+          <Sparkles size={13} strokeWidth={1.5} />
+          AI Assistant
         </button>
 
         {/* Import from AI */}
         <button
           type="button"
           onClick={() => setShowImport(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-btn transition-opacity hover:opacity-80"
-          style={{ background: "var(--cyan-dim)", color: "var(--cyan)", border: "1px solid rgba(45,212,240,0.25)" }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
         >
           <Wand2 size={13} strokeWidth={1.5} />
           Import
@@ -148,10 +138,7 @@ export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onT
           type="button"
           onClick={() => setShowShortcuts(true)}
           title="Keyboard shortcuts (?)"
-          className="p-2 rounded-btn transition-colors"
-          style={{ color: "var(--text-lo)" }}
-          onMouseEnter={e => e.currentTarget.style.color = "var(--text-mid)"}
-          onMouseLeave={e => e.currentTarget.style.color = "var(--text-lo)"}
+          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
         >
           <HelpCircle size={16} strokeWidth={1.5} />
         </button>
@@ -160,10 +147,7 @@ export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onT
         <button
           type="button"
           onClick={onShare}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-btn transition-colors"
-          style={{ color: "var(--text-mid)", border: "1px solid var(--border)", background: "transparent" }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "var(--text-hi)"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-mid)"; }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 hover:border-gray-300 transition-colors"
         >
           <Share2 size={13} strokeWidth={1.5} />
           Share
@@ -173,8 +157,7 @@ export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onT
         <button
           type="button"
           onClick={onDownload}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-btn transition-opacity hover:opacity-85"
-          style={{ background: "var(--cyan)", color: "var(--text-inv)" }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
         >
           <Download size={13} strokeWidth={2} />
           Download
@@ -184,8 +167,7 @@ export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onT
         <button
           type="button"
           onClick={onPresent}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-btn transition-opacity hover:opacity-85"
-          style={{ background: "var(--card2)", color: "var(--text-hi)", border: "1px solid var(--border)" }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <Play size={13} fill="currentColor" strokeWidth={0} />
           Present
@@ -195,10 +177,7 @@ export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onT
           type="button"
           onClick={logout}
           title="Log out"
-          className="p-2 rounded-btn transition-colors"
-          style={{ color: "var(--text-lo)" }}
-          onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
-          onMouseLeave={e => e.currentTarget.style.color = "var(--text-lo)"}
+          className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
         >
           <LogOut size={15} strokeWidth={1.5} />
         </button>

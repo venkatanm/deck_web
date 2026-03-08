@@ -57,6 +57,10 @@ function classifyLocalIntent(instruction) {
   if (/\b(duplicate|copy)\b.*(this|current|the)?\s*slide/.test(t))
     return { type: "duplicate_current" };
 
+  // "add a blank slide" / "insert blank page" — explicit blank, no layout name
+  if (/\bblank\s+(slide|page)\b/.test(t) || /\b(add|insert|new)\s+a?\s*(new\s+)?(slide|page)\b$/.test(t))
+    return { type: "add_blank" };
+
   // "add a SWOT slide" / "insert a timeline" — but NOT "turn this into a SWOT analysis"
   const isStructural = /\b(add|insert|use|apply)\b/.test(t);
   if (isStructural) {
@@ -273,7 +277,7 @@ export default function AIChatPanel({ onClose }) {
     return finalPages;
   };
 
-  const doSend = async (body, userMsgText) => {
+  const doSend = async (body, userMsgText, maxSlides = null) => {
     setInstructionError("");
     setContentError("");
     setWarnings([]);
@@ -381,6 +385,14 @@ export default function AIChatPanel({ onClose }) {
         duplicatePage(currentPageId);
         return "Duplicated the current slide.";
       }
+      case "add_blank": {
+        _snapshot(true);
+        const newPage = { id: uuidv4(), name: "Blank slide", elements: [], backgroundColor: null };
+        const insertAt = currentIndex >= 0 ? currentIndex + 1 : list.length;
+        insertPageAt(newPage, insertAt);
+        setCurrentPageId(newPage.id);
+        return "Added a blank slide.";
+      }
       case "add_layout": {
         const layout = LAYOUT_DEFINITIONS.find((l) => l.id === intentData?.layoutId);
         if (!layout) return "Couldn't find that layout.";
@@ -448,19 +460,30 @@ export default function AIChatPanel({ onClose }) {
       return;
     }
 
+    // Infer desired slide count — handles digits ("3 slides") and words ("two slides")
+    const WORD_NUMS = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12 };
+    const digitHint = /\b(\d+)\s+slides?\b/.exec(trimmed);
+    const wordHint  = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+slides?\b/i.exec(trimmed);
+    const numSlides = digitHint
+      ? Math.min(parseInt(digitHint[1], 10), 12)
+      : wordHint
+        ? WORD_NUMS[wordHint[1].toLowerCase()]
+        : 1;
+
     const body = {
       instruction: trimmed,
       mode,
       persona,
       density,
       content: resolvedContent,
+      num_slides: numSlides,
     };
     const userMsgText = autoExtracted
       ? trimmed
       : `${trimmed}\n\nContext: ${resolvedContent}`;
     setInstruction("");
     setContent("");
-    doSend(body, userMsgText);
+    doSend(body, userMsgText, numSlides);
   };
 
   const handleRetry = () => {

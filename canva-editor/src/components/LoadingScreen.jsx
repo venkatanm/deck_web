@@ -33,7 +33,7 @@ export default function LoadingScreen({ onReady }) {
           <span className="text-white text-3xl font-black">C</span>
         </div>
         <div className="text-center">
-          <h1 className="text-2xl font-black text-gray-900">DeckWeb</h1>
+          <h1 className="text-2xl font-black text-gray-900">Velox Decks</h1>
           <p className="text-sm text-gray-400 mt-1">Design anything, anywhere</p>
         </div>
       </div>

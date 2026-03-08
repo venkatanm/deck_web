@@ -43,7 +43,7 @@ const ToolBtn = ({ onClick, active, disabled, title, children }) => (
     disabled={disabled}
     title={title}
     className={`p-1.5 rounded-md text-sm flex items-center justify-center transition-colors flex-shrink-0 ${
-      active ? "bg-purple-100 text-purple-700" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+      active ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
     } ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
   >
     {children}
@@ -93,7 +93,7 @@ const ColorPickerBtn = ({ value, onChange, label, brandColors = [] }) => {
           <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 z-[9999] min-w-[140px]">
             {allBrandColors.length > 0 && (
               <>
-                <p className="text-[9px] text-purple-600 font-bold uppercase tracking-wide mb-1.5 px-1">
+                <p className="text-[9px] text-blue-600 font-bold uppercase tracking-wide mb-1.5 px-1">
                   Brand Colors
                 </p>
                 <div className="flex flex-wrap gap-1.5 mb-2">
@@ -146,7 +146,7 @@ const OpacityControl = ({ value, onChange }) => (
       max={100}
       value={Math.round((value ?? 1) * 100)}
       onChange={(e) => onChange(Number(e.target.value) / 100)}
-      className="w-20 accent-purple-600 cursor-pointer"
+      className="w-20 accent-blue-600 cursor-pointer"
     />
   </div>
 );
@@ -155,14 +155,14 @@ function FontOption({ font, active, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full px-3 py-2 flex items-center justify-between hover:bg-purple-50 text-left transition-colors ${
-        active ? "bg-purple-50" : ""
+      className={`w-full px-3 py-2 flex items-center justify-between hover:bg-blue-50 text-left transition-colors ${
+        active ? "bg-blue-50" : ""
       }`}
     >
       <span className="text-sm truncate" style={{ fontFamily: font.family }}>
         {font.name}
       </span>
-      {active && <Check className="w-3 h-3 text-purple-600 flex-shrink-0" />}
+      {active && <Check className="w-3 h-3 text-blue-600 flex-shrink-0" />}
     </button>
   );
 }
@@ -190,7 +190,7 @@ function FontPicker({ value, fonts, brandFonts, onChange }) {
     <div ref={ref} className="relative flex-shrink-0">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs hover:border-purple-400 min-w-[130px] max-w-[160px] truncate"
+        className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-800 hover:border-blue-400 min-w-[130px] max-w-[160px] truncate bg-white"
         style={{ fontFamily: value }}
       >
         <span className="truncate flex-1 text-left">{value}</span>
@@ -207,7 +207,7 @@ function FontPicker({ value, fonts, brandFonts, onChange }) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search fonts..."
-                className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-purple-400"
+                className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
               />
             </div>
           </div>
@@ -215,7 +215,7 @@ function FontPicker({ value, fonts, brandFonts, onChange }) {
           <div className="overflow-y-auto max-h-64">
             {brandFiltered.length > 0 && (
               <>
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-purple-600 uppercase tracking-wide bg-purple-50 flex items-center gap-1">
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-blue-600 uppercase tracking-wide bg-blue-50 flex items-center gap-1">
                   <Star className="w-3 h-3" />
                   Brand Fonts
                 </div>
@@ -292,7 +292,7 @@ export default function TextToolbar({ el }) {
             type="number"
             value={el.fontSize || 16}
             onChange={(e) => update({ fontSize: Number(e.target.value) })}
-            className="w-10 text-center text-xs py-1 focus:outline-none focus:bg-purple-50"
+            className="w-10 text-center text-xs py-1 text-gray-800 bg-white focus:outline-none focus:bg-blue-50"
             min={6}
             max={200}
           />
@@ -425,7 +425,7 @@ export default function TextToolbar({ el }) {
             onChange={(e) =>
               update({ letterSpacing: Number(e.target.value) })
             }
-            className="w-20 accent-purple-600"
+            className="w-20 accent-blue-600"
           />
           <span className="text-[10px] text-gray-500 w-6">
             {el.letterSpacing || 0}
@@ -447,7 +447,7 @@ export default function TextToolbar({ el }) {
             onChange={(e) =>
               update({ lineHeight: Number(e.target.value) })
             }
-            className="w-20 accent-purple-600"
+            className="w-20 accent-blue-600"
           />
           <span className="text-[10px] text-gray-500 w-6">
             {(el.lineHeight || 1.4).toFixed(1)}

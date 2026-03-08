@@ -119,7 +119,7 @@ export default function StylesPanel() {
             type="button"
             onClick={() => setActiveTab(tab)}
             className={`flex-1 text-xs py-1.5 rounded-lg font-medium capitalize transition-colors ${
-              activeTab === tab ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'
+              activeTab === tab ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'
             }`}
           >
             {tab === 'palettes' ? 'Color Palettes' : 'Font Pairings'}
@@ -135,7 +135,7 @@ export default function StylesPanel() {
             type="button"
             onClick={() => setApplyAll(false)}
             className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
-              !applyAll ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-gray-700'
+              !applyAll ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             This slide
@@ -144,7 +144,7 @@ export default function StylesPanel() {
             type="button"
             onClick={() => setApplyAll(true)}
             className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
-              applyAll ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-gray-700'
+              applyAll ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             All slides
@@ -179,15 +179,15 @@ export default function StylesPanel() {
                 className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all group text-left ${
                   incompatible
                     ? 'border-gray-100 bg-white opacity-40 hover:opacity-70 hover:border-gray-300'
-                    : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50'
+                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'
                 }`}
               >
-                <div className="flex rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                <div className="flex rounded-lg overflow-hidden flex-shrink-0 shadow-sm border border-gray-200">
                   {palette.preview.map((color, i) => (
                     <div key={i} className="w-8 h-10" style={{ background: color }} />
                   ))}
                 </div>
-                <span className={`text-xs font-medium flex-1 ${incompatible ? 'text-gray-400' : 'text-gray-700 group-hover:text-purple-700'}`}>
+                <span className={`text-xs font-medium flex-1 ${incompatible ? 'text-gray-400' : 'text-gray-700 group-hover:text-blue-700'}`}>
                   {palette.name}
                 </span>
                 {incompatible && (
@@ -209,10 +209,10 @@ export default function StylesPanel() {
               key={pairing.id}
               type="button"
               onClick={() => applyFontPairing(pairing)}
-              className="flex flex-col gap-1 p-3 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left group"
+              className="flex flex-col gap-1 p-3 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
             >
               <span
-                className="text-xl text-gray-900 group-hover:text-purple-800 leading-tight"
+                className="text-xl text-gray-900 group-hover:text-blue-800 leading-tight"
                 style={{
                   fontFamily: pairing.heading.family,
                   fontWeight: pairing.heading.weight,

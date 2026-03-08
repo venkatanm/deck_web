@@ -119,7 +119,7 @@ export function TemplatesPanel() {
           placeholder="Search templates..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-purple-400"
+          className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 text-gray-800 placeholder-gray-400"
         />
       </div>
 
@@ -132,7 +132,7 @@ export function TemplatesPanel() {
             onClick={() => setCategory(cat)}
             className={`text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors ${
               activeCategory === cat
-                ? "bg-purple-600 text-white"
+                ? "bg-blue-600 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -146,10 +146,10 @@ export function TemplatesPanel() {
         type="button"
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
-        className="flex items-center justify-center gap-2 w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-xs font-medium text-gray-500 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 transition-all disabled:opacity-50"
+        className="flex items-center justify-center gap-2 w-full py-2.5 border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 transition-all disabled:opacity-50"
       >
         {uploading ? (
-          <><span className="animate-spin text-purple-600">⟳</span> Importing PPTX…</>
+          <><Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" /> Importing PPTX…</>
         ) : (
           <><FileUp size={14} /> Import from PPTX</>
         )}
@@ -214,17 +214,17 @@ function TemplateCard({ template, isUserTemplate, onRemove }) {
   if (isBlank) {
     return (
       <div
-        className="rounded-xl border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 transition-all group cursor-pointer flex items-center gap-3 px-4 py-3"
+        className="rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all group cursor-pointer flex items-center gap-3 px-4 py-3"
         onClick={applyTemplate}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && applyTemplate()}
       >
-        <div className="w-12 h-9 bg-white border border-gray-200 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:border-purple-300">
-          <div className="w-5 h-0.5 bg-gray-200 rounded" />
+        <div className="w-12 h-9 bg-white border border-gray-200 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:border-blue-400">
+          <div className="w-5 h-0.5 bg-gray-300 rounded" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-gray-800 group-hover:text-purple-700">Blank</p>
+          <p className="text-xs font-semibold text-gray-900 group-hover:text-blue-600">Blank</p>
           <p className="text-[11px] text-gray-400">Start with an empty slide</p>
         </div>
       </div>
@@ -233,14 +233,14 @@ function TemplateCard({ template, isUserTemplate, onRemove }) {
 
   return (
     <div
-      className="rounded-xl border border-gray-200 overflow-hidden hover:border-purple-400 transition-all group cursor-pointer"
+      className="rounded-xl border border-gray-200 overflow-hidden hover:border-blue-400 transition-all group cursor-pointer"
       onClick={() => setShowConfirm(true)}
       onKeyDown={(e) => e.key === "Enter" && setShowConfirm(true)}
       role="button"
       tabIndex={0}
     >
       <div
-        className="w-full h-32 relative overflow-hidden"
+        className="w-full h-32 relative overflow-hidden bg-gray-100"
         style={{ background: template.thumbnail?.bg || "#f1f5f9" }}
       >
         <div
@@ -267,16 +267,16 @@ function TemplateCard({ template, isUserTemplate, onRemove }) {
             <X size={12} />
           </button>
         )}
-        <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/10 transition-colors flex items-center justify-center">
-          <div className="opacity-0 group-hover:opacity-100 bg-purple-600 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg transition-all transform scale-95 group-hover:scale-100">
+        <div className="absolute inset-0 group-hover:bg-blue-600/10 transition-colors flex items-center justify-center">
+          <div className="opacity-0 group-hover:opacity-100 bg-blue-600 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg transition-all transform scale-95 group-hover:scale-100">
             Use Template
           </div>
         </div>
       </div>
 
-      <div className="px-3 py-2 flex items-center justify-between">
+      <div className="px-3 py-2 flex items-center justify-between bg-white">
         <div>
-          <p className="text-xs font-semibold text-gray-800">{template.name}</p>
+          <p className="text-xs font-semibold text-gray-900">{template.name}</p>
           <p className="text-[11px] text-gray-400">{template.category}</p>
         </div>
         <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
@@ -293,7 +293,7 @@ function TemplateCard({ template, isUserTemplate, onRemove }) {
           aria-modal="true"
         >
           <div
-            className="bg-white rounded-2xl p-6 shadow-2xl w-80"
+            className="rounded-2xl p-6 shadow-2xl w-80 bg-white"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="font-bold text-gray-900 mb-2">Apply Template?</h3>
@@ -305,14 +305,14 @@ function TemplateCard({ template, isUserTemplate, onRemove }) {
               <button
                 type="button"
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50"
+                className="flex-1 py-2 text-sm bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={applyTemplate}
-                className="flex-1 py-2 text-sm bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium"
+                className="flex-1 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium"
               >
                 Apply
               </button>
@@ -490,7 +490,7 @@ export function ElementsPanel() {
 
   const SectionHead = ({ title, count }) =>
     (!q || count > 0) ? (
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 mt-1">{title}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 px-1 mb-2">{title}</p>
     ) : null;
 
   return (
@@ -502,7 +502,7 @@ export function ElementsPanel() {
           placeholder="Search elements…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-purple-400"
+          className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 text-gray-800 placeholder-gray-400"
         />
       </div>
 
@@ -524,12 +524,12 @@ export function ElementsPanel() {
                   key={preset.subtype}
                   type="button"
                   onClick={() => { const d = STAT_BLOCK_DEFAULTS[preset.subtype]; if (d) addElement({ ...d }); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left"
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
                 >
-                  <div className="w-10 h-8 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-[10px] font-bold flex-shrink-0">
+                  <div className="w-10 h-8 bg-gray-100 rounded flex items-center justify-center text-blue-600 text-[10px] font-bold flex-shrink-0">
                     {preset.icon}
                   </div>
-                  <span className="text-xs font-medium text-gray-700">{preset.label}</span>
+                  <span className="text-xs font-medium text-gray-900">{preset.label}</span>
                 </button>
               ))}
             </div>
@@ -546,11 +546,11 @@ export function ElementsPanel() {
                   key={subtype}
                   type="button"
                   onClick={() => { const d = FLOWCHART_DEFAULTS[subtype]; if (d) addElement({ ...d }); }}
-                  className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
+                  className="w-14 h-14 rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center gap-1 transition-all"
                   title={label}
                 >
-                  <div className="w-8 h-6 rounded bg-purple-300/60 border border-purple-500" />
-                  <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{subtype}</span>
+                  <div className="w-8 h-6 rounded bg-gray-100 border border-gray-300" />
+                  <span className="text-[9px] font-medium text-gray-500 truncate w-full text-center">{subtype}</span>
                 </button>
               ))}
             </div>
@@ -567,12 +567,14 @@ export function ElementsPanel() {
                   key={shape}
                   type="button"
                   onClick={() => { const d = FRAME_DEFAULTS[shape]; if (d) addElement({ ...d }); }}
-                  className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
+                  className="w-14 h-14 rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center gap-1 transition-all"
                   title={label}
                 >
-                  <div className="w-8 h-8 rounded-full bg-purple-300/50 border-2 border-purple-500"
-                    style={shape === "roundedRect" ? { borderRadius: 6 } : shape === "hexagon" || shape === "diamond" ? { transform: "rotate(45deg)", borderRadius: 2 } : shape === "triangle" ? { clipPath: "polygon(50% 0, 100% 100%, 0 100%)", borderRadius: 0 } : {}} />
-                  <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{shape}</span>
+                  <div className="w-8 h-8 rounded-full border-2 border-gray-300 bg-gray-100"
+                    style={{
+                      ...(shape === "roundedRect" ? { borderRadius: 6 } : shape === "hexagon" || shape === "diamond" ? { transform: "rotate(45deg)", borderRadius: 2 } : shape === "triangle" ? { clipPath: "polygon(50% 0, 100% 100%, 0 100%)", borderRadius: 0 } : {})
+                    }} />
+                  <span className="text-[9px] font-medium text-gray-500 truncate w-full text-center">{shape}</span>
                 </button>
               ))}
             </div>
@@ -589,12 +591,12 @@ export function ElementsPanel() {
                   key={preset.subtype}
                   type="button"
                   onClick={() => { const d = TIMELINE_DEFAULTS[preset.subtype]; if (d) addElement({ ...d }); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left"
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
                 >
-                  <div className="w-10 h-8 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-[10px] font-bold flex-shrink-0">
+                  <div className="w-10 h-8 bg-gray-100 rounded flex items-center justify-center text-blue-600 text-[10px] font-bold flex-shrink-0">
                     {preset.icon}
                   </div>
-                  <span className="text-xs font-medium text-gray-700">{preset.label}</span>
+                  <span className="text-xs font-medium text-gray-900">{preset.label}</span>
                 </button>
               ))}
             </div>
@@ -611,11 +613,11 @@ export function ElementsPanel() {
                   key={dir}
                   type="button"
                   onClick={() => { const d = CALLOUT_DEFAULTS[dir]; if (d) addElement({ ...d }); }}
-                  className="w-14 h-14 rounded-lg bg-purple-100 hover:bg-purple-200 flex flex-col items-center justify-center gap-1 border border-purple-200"
+                  className="w-14 h-14 rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center gap-1 transition-all"
                   title={label}
                 >
-                  <div className="w-10 h-7 rounded bg-purple-500 flex items-center justify-center text-white text-[10px] font-bold">💬</div>
-                  <span className="text-[9px] font-medium text-purple-700 truncate w-full text-center">{label}</span>
+                  <div className="w-10 h-7 rounded bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">💬</div>
+                  <span className="text-[9px] font-medium text-gray-500 truncate w-full text-center">{label}</span>
                 </button>
               ))}
             </div>
@@ -632,10 +634,10 @@ export function ElementsPanel() {
                   key={id}
                   type="button"
                   onClick={() => addElement({ ...DEFAULT_ELEMENT_PROPS[type] || DEFAULT_ELEMENT_PROPS.rect })}
-                  className="w-14 h-14 rounded-lg bg-gray-100 hover:bg-gray-200 flex flex-col items-center justify-center gap-1"
+                  className="w-14 h-14 rounded-lg bg-gray-100 hover:bg-blue-50 hover:border-blue-400 border border-gray-200 flex flex-col items-center justify-center gap-1 transition-all"
                 >
                   <svg viewBox="0 0 56 56" className="w-8 h-8">{SHAPE_SVGS[type] || SHAPE_SVGS.rect}</svg>
-                  <span className="text-[10px] font-medium text-gray-600 truncate w-full text-center">{label}</span>
+                  <span className="text-[10px] font-medium text-gray-700 truncate w-full text-center">{label}</span>
                 </button>
               ))}
             </div>
@@ -652,7 +654,7 @@ export function ElementsPanel() {
                   key={id}
                   type="button"
                   onClick={() => addElement({ ...props })}
-                  className="w-14 h-14 rounded-lg bg-gray-100 hover:bg-gray-200 flex flex-col items-center justify-center gap-1"
+                  className="w-14 h-14 rounded-lg bg-gray-100 hover:bg-blue-50 hover:border-blue-400 border border-gray-200 flex flex-col items-center justify-center gap-1 transition-all"
                 >
                   <svg viewBox="0 0 56 56" className="w-8 h-8">
                     {id === "arrow" ? (
@@ -661,7 +663,7 @@ export function ElementsPanel() {
                       <line x1={8} y1={28} x2={48} y2={28} stroke="#7c3aed" strokeWidth={3} strokeDasharray={props.dash?.join(" ") || "none"} />
                     )}
                   </svg>
-                  <span className="text-[10px] font-medium text-gray-600 truncate w-full text-center">{label}</span>
+                  <span className="text-[10px] font-medium text-gray-700 truncate w-full text-center">{label}</span>
                 </button>
               ))}
             </div>
@@ -684,7 +686,7 @@ export function ElementsPanel() {
                     fillLinearGradientColorStops: [0, colors[0], 1, colors[1]],
                     opacity: 1, rotation: 0,
                   })}
-                  className="aspect-video rounded-lg border border-gray-200 overflow-hidden"
+                  className="aspect-video rounded-lg border border-gray-200 overflow-hidden hover:border-blue-400 transition-all"
                   style={{ background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})` }}
                 >
                   <span className="text-[10px] font-medium text-white/90 drop-shadow">{name}</span>
@@ -777,13 +779,14 @@ function FontComboCard({ combo }) {
     const baseX = canvasSize.width / 2 - 200;
     const baseY = canvasSize.height / 2 - 60;
     combo.elements.forEach((el) => {
+      const { x: elX, y: elY, ...rest } = el;
       addElement({
         type: "text",
         rotation: 0,
         opacity: 1,
-        x: baseX + (el.x || 0),
-        y: baseY + (el.y || 0),
-        ...el,
+        ...rest,
+        x: baseX + (elX || 0),
+        y: baseY + (elY || 0),
       });
     });
   };
@@ -791,7 +794,7 @@ function FontComboCard({ combo }) {
   return (
     <button
       onClick={handleAdd}
-      className="p-3 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left overflow-hidden bg-white group min-h-[80px]"
+      className="p-3 rounded-lg border border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 transition-all text-left overflow-hidden group min-h-[80px]"
     >
       <div className="pointer-events-none">
         {combo.elements.map((el, i) => (
@@ -816,7 +819,7 @@ function FontComboCard({ combo }) {
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-gray-400 mt-1 group-hover:text-purple-500 truncate">
+      <p className="text-[10px] text-gray-400 mt-1 group-hover:text-blue-500 truncate">
         {combo.name}
       </p>
     </button>
@@ -842,7 +845,7 @@ export function TextPanel() {
                 ...preset.defaults,
               })
             }
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left group"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
           >
             <span
               style={{
@@ -856,13 +859,13 @@ export function TextPanel() {
             >
               {preset.preview}
             </span>
-            <span className="text-xs text-gray-500 group-hover:text-purple-600">
+            <span className="text-xs text-gray-500 group-hover:text-blue-600">
               {preset.label}
             </span>
           </button>
         ))}
       </div>
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 mt-4">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 px-1 mb-2 mt-4">
         Font Combinations
       </p>
       <div className="grid grid-cols-2 gap-2">
@@ -982,10 +985,10 @@ export function UploadsPanel() {
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors duration-150 select-none ${
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors duration-150 select-none ${
           dragging
-            ? "border-purple-500 bg-purple-50"
-            : "border-gray-300 hover:border-purple-400 hover:bg-gray-50"
+            ? "border-blue-400 bg-blue-50"
+            : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
         }`}
       >
         <input
@@ -997,7 +1000,7 @@ export function UploadsPanel() {
         />
         {loading ? (
           <div className="flex flex-col items-center gap-2">
-            <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
             <p className="text-sm text-gray-500">Processing image...</p>
           </div>
         ) : (
@@ -1012,12 +1015,12 @@ export function UploadsPanel() {
       </div>
 
       {error && (
-        <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">
+        <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
 
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-1">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 px-1 mt-1">
         Your Uploads ({uploads.length})
       </p>
 
@@ -1047,7 +1050,7 @@ export function UploadsPanel() {
                   e.stopPropagation();
                   handleAddToCanvas(upload);
                 }}
-                className="bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-purple-100 shadow"
+                className="bg-white text-gray-900 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-blue-50 shadow"
               >
                 <Plus className="w-3 h-3" /> Add
               </button>
@@ -1143,7 +1146,7 @@ function StockPhotosSection({ addElement, compressImage, uploadImage, toast }) {
 
   return (
     <div className="mt-4">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 px-1 mb-2">
         Stock Photos
       </p>
       <div className="flex gap-2 mb-2">
@@ -1153,12 +1156,12 @@ function StockPhotosSection({ addElement, compressImage, uploadImage, toast }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
-          className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-purple-400"
+          className="flex-1 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 text-gray-800 placeholder-gray-400"
         />
         <button
           type="button"
           onClick={() => search()}
-          className="bg-purple-600 text-white text-xs px-3 py-2 rounded-xl hover:bg-purple-700"
+          className="bg-blue-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-blue-700"
         >
           Go
         </button>
@@ -1173,7 +1176,7 @@ function StockPhotosSection({ addElement, compressImage, uploadImage, toast }) {
                 setQuery(s);
                 search(s);
               }}
-              className="text-[11px] bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full hover:bg-purple-100 hover:text-purple-700"
+              className="text-[11px] bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full hover:bg-gray-200"
             >
               {s}
             </button>
@@ -1198,7 +1201,7 @@ function StockPhotosSection({ addElement, compressImage, uploadImage, toast }) {
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/30 transition-colors flex items-center justify-center">
+              <div className="absolute inset-0 group-hover:bg-blue-600/10 transition-colors flex items-center justify-center">
                 <Plus className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </button>
@@ -1267,19 +1270,19 @@ export function ProjectsPanel() {
           placeholder="Project name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+          className="flex-1 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 text-gray-800 placeholder-gray-400"
         />
         <button
           type="button"
           onClick={handleSave}
           disabled={loading}
-          className="px-4 py-2 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 disabled:opacity-50"
+          className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
         >
-          {loading ? "Saving..." : "Save Project"}
+          {loading ? "Saving..." : "Save"}
         </button>
       </div>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 px-1">
           Projects
         </p>
         <button
@@ -1298,7 +1301,7 @@ export function ProjectsPanel() {
         </button>
       </div>
       {projects.length === 0 ? (
-        <p className="text-sm text-gray-500 py-4">No saved projects yet</p>
+        <p className="text-sm text-gray-400 py-4">No saved projects yet</p>
       ) : (
         <div className="flex flex-col gap-2">
           {projects.map((project) => (
@@ -1306,7 +1309,7 @@ export function ProjectsPanel() {
               key={project.id}
               className="p-3 bg-white border border-gray-200 rounded-lg"
             >
-              <p className="font-bold text-gray-900">{project.name}</p>
+              <p className="font-medium text-gray-900">{project.name}</p>
               <p className="text-xs text-gray-500 mt-1">
                 {new Date(project.updated_at || project.savedAt).toLocaleString()}
               </p>
@@ -1314,14 +1317,14 @@ export function ProjectsPanel() {
                 <button
                   type="button"
                   onClick={() => handleLoad(project)}
-                  className="px-3 py-1 bg-purple-500 text-white text-sm rounded"
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                 >
                   Load
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDelete(project.id)}
-                  className="px-3 py-1 bg-red-500 text-white text-sm rounded"
+                  className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
                 >
                   Delete
                 </button>
@@ -1407,15 +1410,15 @@ function ChartPreviewCard({ chart, onAdd }) {
     <button
       type="button"
       onClick={onAdd}
-      className="flex flex-col items-center gap-1.5 p-2 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all group bg-white"
+      className="flex flex-col items-center gap-1.5 p-2 rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all group"
     >
       <div
-        className="w-full flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden group-hover:bg-purple-50 transition-colors"
+        className="w-full flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden group-hover:bg-blue-50 transition-colors"
         style={{ height: 72 }}
       >
         <IconComp width={116} height={68} />
       </div>
-      <span className="text-[11px] text-gray-600 group-hover:text-purple-700 font-medium text-center leading-tight">
+      <span className="text-[11px] text-gray-700 group-hover:text-blue-600 font-medium text-center leading-tight">
         {chart.label}
       </span>
     </button>
@@ -1430,9 +1433,18 @@ export function ChartsPanel() {
   const handleAdd = (chartDef) => {
     const defaults = CHART_DEFAULTS[chartDef.defaultKey];
     if (!defaults) return;
+    // Offset position based on existing chart elements to avoid stacking
+    const { pages, currentPageId, canvasSize } = useEditorStore.getState();
+    const page = pages.find((p) => p.id === currentPageId);
+    const chartCount = (page?.elements || []).filter((e) => e.type === "chart").length;
+    const offset = chartCount * 30;
+    const maxX = canvasSize.width - defaults.width - 40;
+    const maxY = canvasSize.height - defaults.height - 40;
     addElement({
       ...JSON.parse(JSON.stringify(defaults)),
       ...(chartDef.extraProps || {}),
+      x: Math.min(defaults.x + offset, maxX > 0 ? maxX : defaults.x),
+      y: Math.min(defaults.y + offset, maxY > 0 ? maxY : defaults.y),
     });
     toast("Chart added! Click \"Edit Data\" in the toolbar to customize.", "info");
   };
@@ -1453,13 +1465,13 @@ export function ChartsPanel() {
           placeholder="Search charts..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-full text-sm"
+          className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 text-gray-800 placeholder-gray-400"
         />
       </div>
       <div className="px-3 py-2 flex-1 overflow-y-auto scrollbar-hide">
         {filtered.map((category) => (
           <div key={category.category} className="mb-4">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 px-1 mb-2">
               {category.category}
             </p>
             <div className="grid grid-cols-2 gap-2">
@@ -1493,7 +1505,7 @@ export function BackgroundPanel() {
 
   return (
     <div className="px-3 py-2 flex-1 overflow-y-auto scrollbar-hide">
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 px-1 mb-3">
         Background Color
       </p>
       <div className="grid grid-cols-5 gap-2 mb-6">
@@ -1503,13 +1515,13 @@ export function BackgroundPanel() {
             type="button"
             onClick={() => setBackgroundColor(color)}
             className={`w-8 h-8 rounded-full border-2 transition-colors ${
-              currentBg === color ? "border-purple-500 ring-2 ring-purple-200" : "border-gray-200"
+              currentBg === color ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-200"
             }`}
             style={{ backgroundColor: color }}
           />
         ))}
       </div>
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 px-1 mb-3">
         Custom Color
       </p>
       <div className="flex flex-col gap-2">
