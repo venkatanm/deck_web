@@ -699,7 +699,8 @@ const useEditorStore = create((set, get) => ({
 
   // ── Project save/load ──────────────────────
   saveProject: async (name) => {
-    const { pages, canvasSize, projectId } = get();
+    const { pages, canvasSize, projectId, title: storeTitle } = get();
+    name = name || storeTitle || 'Untitled Design';
     const pagesToSave = clonePages(pages).map(p => ({
       ...p,
       elements: p.elements.map(el =>
@@ -708,23 +709,62 @@ const useEditorStore = create((set, get) => ({
           : el
       ),
     }));
+
+    // Generate a thumbnail at 12% scale (~230px wide JPEG, ~3-8KB)
+    let thumbnail_url = null;
+    try {
+      const { pageToDataURL } = await import('../utils/exportCanvas');
+      thumbnail_url = await pageToDataURL(pages[0], canvasSize, 0.12, 'image/jpeg');
+    } catch (e) {
+      console.warn('Thumbnail generation failed:', e);
+    }
+
+    const { createProject, updateProject } = await import('../api/projects');
+    const { track } = await import('../api/analytics');
+    if (projectId) {
+      const payload = { name: name || 'Untitled Design', canvas_size: canvasSize, pages: pagesToSave, thumbnail_url };
+      await updateProject(projectId, payload);
+      set({ title: payload.name });
+      track('project.saved', { slide_count: pages.length, action: 'update' });
+      return { id: projectId, name: payload.name, savedAt: new Date().toISOString() };
+    } else {
+      const payload = { name: name || 'Untitled Design', canvas_size: canvasSize, pages: pagesToSave, thumbnail_url };
+      const { id } = await createProject(payload);
+      set({ projectId: id, title: payload.name });
+      track('project.saved', { slide_count: pages.length, action: 'create' });
+      return { id, name: payload.name, savedAt: new Date().toISOString() };
+    }
+  },
+
+  saveProjectAs: async (name) => {
+    const { pages, canvasSize } = get();
+    const pagesToSave = clonePages(pages).map(p => ({
+      ...p,
+      elements: p.elements.map(el =>
+        el.type === 'image' ? { ...el, src: '' } : el
+      ),
+    }));
+
+    let thumbnail_url = null;
+    try {
+      const { pageToDataURL } = await import('../utils/exportCanvas');
+      thumbnail_url = await pageToDataURL(pages[0], canvasSize, 0.12, 'image/jpeg');
+    } catch (e) {
+      console.warn('Thumbnail generation failed:', e);
+    }
+
     const payload = {
       name: name || 'Untitled Design',
       canvas_size: canvasSize,
       pages: pagesToSave,
-      thumbnail_url: null,
+      thumbnail_url,
     };
-    const { createProject, updateProject } = await import('../api/projects');
-    if (projectId) {
-      // Update existing project in place
-      await updateProject(projectId, payload);
-      return { id: projectId, name: payload.name, savedAt: new Date().toISOString() };
-    } else {
-      // First save — create new project and remember its id
-      const { id } = await createProject(payload);
-      set({ projectId: id });
-      return { id, name: payload.name, savedAt: new Date().toISOString() };
-    }
+    const { createProject } = await import('../api/projects');
+    const { track } = await import('../api/analytics');
+    const { id } = await createProject(payload);
+    track('project.save_as', { slide_count: pages.length });
+    // Do NOT switch projectId — user stays on the original project
+    return { id, name: payload.name, savedAt: new Date().toISOString() };
   },
 
   loadProject: async (project) => {
@@ -752,6 +792,11 @@ const useEditorStore = create((set, get) => ({
       title: project.name || 'Untitled Design',
       projectId: project.id || null,
     });
+    if (project.id) {
+      import('../api/analytics').then(({ track }) =>
+        track('project.opened', { slide_count: pages.length })
+      );
+    }
   },
 }));
 

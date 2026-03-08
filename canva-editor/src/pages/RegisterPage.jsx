@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register } from "../api/auth";
+import { track } from "../api/analytics";
+import { VeloxDecksLogo } from "../components/brand/VeloxDecksLogo";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -19,6 +21,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(email, password);
+      track('user.registered');
       navigate("/home", { replace: true });
     } catch (err) {
       setError(err.message || "Registration failed");
@@ -28,20 +31,21 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">C</span>
-          </div>
-          <span className="font-bold text-gray-800 text-xl">DeckWeb</span>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--bg)" }}>
+      {/* Background glow */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.04]"
+          style={{ background: "radial-gradient(circle, #2DD4F0, transparent 70%)" }} />
+      </div>
+
+      <div className="relative w-full max-w-sm rounded-2xl p-8" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <div className="mb-8">
+          <VeloxDecksLogo size="md" />
         </div>
-        <h1 className="text-xl font-semibold text-gray-900 mb-6">Create account</h1>
+        <h1 className="text-xl font-semibold mb-6" style={{ color: "var(--text-hi)" }}>Create account</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="email" className="block text-xs font-medium text-gray-500 mb-1">
-              Email
-            </label>
+            <label htmlFor="email" className="panel-label">Email</label>
             <input
               id="email"
               type="email"
@@ -49,13 +53,11 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-purple-500"
+              className="panel-input"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-xs font-medium text-gray-500 mb-1">
-              Password (min 8 characters)
-            </label>
+            <label htmlFor="password" className="panel-label">Password (min 8 characters)</label>
             <input
               id="password"
               type="password"
@@ -64,25 +66,26 @@ export default function RegisterPage() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-purple-500"
+              className="panel-input"
             />
           </div>
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">
+            <p className="text-xs rounded-lg px-3 py-2" style={{ color: "#f87171", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)" }}>
               {error}
             </p>
           )}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+            className="w-full py-2.5 disabled:opacity-50 font-semibold rounded-lg transition-opacity hover:opacity-90"
+            style={{ background: "var(--cyan)", color: "var(--text-inv)" }}
           >
-            {loading ? "Creating account..." : "Register"}
+            {loading ? "Creating account…" : "Register"}
           </button>
         </form>
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm" style={{ color: "var(--text-lo)" }}>
           Already have an account?{" "}
-          <Link to="/login" className="text-purple-600 hover:text-purple-700 font-medium">
+          <Link to="/login" className="font-medium transition-colors hover:opacity-80" style={{ color: "var(--cyan)" }}>
             Sign in
           </Link>
         </p>

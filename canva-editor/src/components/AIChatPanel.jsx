@@ -12,6 +12,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
+import useFeedback from "../store/useFeedback";
 import { buildSlideElements, applyBrandKitToPages } from "../utils/importContentSchema";
 import { LAYOUT_DEFINITIONS } from "../data/layoutDefinitions";
 import { v4 as uuidv4 } from "uuid";
@@ -33,23 +34,12 @@ const LAYOUT_ALIASES = {
   agenda: "agenda-list", title: "title-center", team: "team-grid",
   "pros and cons": "pros-cons", "before and after": "before-after",
   "hub and spoke": "hub-spoke", pyramid: "pyramid", table: "table",
-  "bar chart": "bar-chart", "two stats": "two-stats", "four stats": "four-stats",
+  "bar chart": "bar-chart", "barchart": "bar-chart", "bar graph": "bar-chart",
+  "pie chart": "bar-chart", "pie graph": "bar-chart",
+  "two stats": "two-stats", "four stats": "four-stats",
   testimonial: "testimonial", "dark quote": "dark-quote", "thank you": "thank-you",
   cta: "cta", "call to action": "cta",
 };
-
-function findLayoutId(text) {
-  const lower = text.toLowerCase();
-  // Check aliases first
-  for (const [alias, id] of Object.entries(LAYOUT_ALIASES)) {
-    if (lower.includes(alias)) return id;
-  }
-  // Check layout names directly
-  for (const layout of LAYOUT_DEFINITIONS) {
-    if (lower.includes(layout.name.toLowerCase())) return layout.id;
-  }
-  return null;
-}
 
 // Content-transformation verbs → always call the API, never short-circuit locally
 const CONTENT_VERBS = /\b(summaris[e]?|summarize|rewrite|tighten|expand|condense|restructure|rephrase|simplify|make|turn\s+into|focus\s+on|add\s+a\s+section|convert|extract|highlight|distil|distill|shorten|lengthen|improve|refine|update|revise|edit|clean\s+up|flesh\s+out)\b/;
@@ -70,8 +60,18 @@ function classifyLocalIntent(instruction) {
   // "add a SWOT slide" / "insert a timeline" — but NOT "turn this into a SWOT analysis"
   const isStructural = /\b(add|insert|use|apply)\b/.test(t);
   if (isStructural) {
-    const id = findLayoutId(t);
-    if (id) return { type: "add_layout", layoutId: id };
+    // Count how many distinct layout aliases match — if multiple, let API handle it
+    const matchedLayouts = Object.entries(LAYOUT_ALIASES).filter(([alias]) => t.includes(alias));
+    const uniqueIds = new Set(matchedLayouts.map(([, id]) => id));
+    if (uniqueIds.size === 1) {
+      return { type: "add_layout", layoutId: [...uniqueIds][0] };
+    } else if (uniqueIds.size > 1) {
+      // Multiple different layouts requested — fall through to API
+      return null;
+    }
+    // Also check layout names directly (single match only)
+    const directMatches = LAYOUT_DEFINITIONS.filter(l => t.includes(l.name.toLowerCase()));
+    if (directMatches.length === 1) return { type: "add_layout", layoutId: directMatches[0].id };
   }
 
   // "add X to slide 3"
@@ -79,8 +79,8 @@ function classifyLocalIntent(instruction) {
   if (slideNMatch && /\b(add|put|insert|append)\b/.test(t))
     return { type: "edit_slide_n", slideIndex: parseInt(slideNMatch[1], 10) - 1 };
 
-  // "add X to this/current slide"
-  if (/\b(add|put|insert|append)\b.*(this|current|the)?\s*slide/.test(t))
+  // "add X to this/current slide" — requires explicit this/current qualifier
+  if (/\b(add|put|insert|append)\b.*(this|current)\s*slide/.test(t))
     return { type: "edit_current" };
 
   return null;
@@ -129,7 +129,7 @@ function MessageBubble({ msg, onRetry }) {
   if (msg.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] bg-purple-600 text-white text-sm rounded-2xl rounded-tr-sm px-4 py-2.5 leading-relaxed">
+        <div className="max-w-[85%] text-sm rounded-2xl rounded-tr-sm px-4 py-2.5 leading-relaxed" style={{ background: "var(--cyan-dim)", color: "var(--text-hi)", border: "1px solid rgba(45,212,240,0.2)" }}>
           {msg.text}
         </div>
       </div>
@@ -139,12 +139,13 @@ function MessageBubble({ msg, onRetry }) {
   if (msg.role === "error") {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[85%] bg-red-50 border border-red-200 text-red-700 text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 leading-relaxed">
+        <div className="max-w-[85%] text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 leading-relaxed" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#fca5a5" }}>
           <p>{msg.text}</p>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-2 flex items-center gap-1 text-xs font-semibold text-red-600 hover:text-red-800 transition-colors"
+              className="mt-2 flex items-center gap-1 text-xs font-semibold transition-colors"
+              style={{ color: "#f87171" }}
             >
               <RefreshCw size={11} /> Retry
             </button>
@@ -157,17 +158,19 @@ function MessageBubble({ msg, onRetry }) {
   // assistant
   return (
     <div className="flex justify-start">
-      <div className="max-w-[85%] bg-white border border-gray-200 text-gray-800 text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 leading-relaxed shadow-sm">
-        <div className="flex items-center gap-1.5 mb-1.5 text-purple-600 text-xs font-semibold">
-          <Wand2 size={11} />
-          AI generated {msg.slideCount} slide{msg.slideCount !== 1 ? "s" : ""}
-        </div>
-        <p className="text-gray-500 text-xs">{msg.text}</p>
+      <div className="max-w-[85%] text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 leading-relaxed" style={{ background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text-mid)" }}>
+        {msg.slideCount > 0 && (
+          <div className="flex items-center gap-1.5 mb-1.5 text-xs font-semibold" style={{ color: "var(--cyan)" }}>
+            <Wand2 size={11} />
+            AI generated {msg.slideCount} slide{msg.slideCount !== 1 ? "s" : ""}
+          </div>
+        )}
+        <p className="text-xs" style={{ color: "var(--text-mid)" }}>{msg.text}</p>
         {msg.slideNames?.length > 0 && (
           <ul className="mt-1.5 space-y-0.5">
             {msg.slideNames.map((name, i) => (
-              <li key={i} className="flex items-center gap-1.5 text-xs text-gray-600">
-                <span className="w-4 h-4 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[9px] font-bold flex-shrink-0">
+              <li key={i} className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-hi)" }}>
+                <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0" style={{ background: "var(--cyan-dim)", color: "var(--cyan)" }}>
                   {i + 1}
                 </span>
                 {name}
@@ -181,6 +184,7 @@ function MessageBubble({ msg, onRetry }) {
 }
 
 export default function AIChatPanel({ onClose }) {
+  const triggerSurvey = useFeedback((s) => s.triggerSurvey);
   const [mode, setMode] = useState("fast");
   const [persona, setPersona] = useState("Executive");
   const [density, setDensity] = useState("standard");
@@ -341,6 +345,12 @@ export default function AIChatPanel({ onClose }) {
           slideNames: inserted.map((p) => p.name),
         },
       ]);
+      // Trigger doc-to-deck survey after a successful AI import
+      triggerSurvey("doc_to_deck", {
+        isDirty: false,
+        isModalOpen: false,
+        pageContext: "editor",
+      });
     } catch (err) {
       // Network / timeout
       console.error("Network error:", err);
@@ -467,56 +477,49 @@ export default function AIChatPanel({ onClose }) {
   };
 
   return (
-    <div className="fixed right-0 top-14 bottom-[140px] w-[360px] bg-white border-l border-gray-200 shadow-2xl z-[9990] flex flex-col">
+    <div className="fixed right-0 top-14 bottom-[140px] w-[360px] z-[9990] flex flex-col" style={{ background: "var(--bg-deep)", borderLeft: "1px solid var(--border)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #7c3aed 0%, #0891b2 100%)" }}
-          >
-            <Wand2 size={14} className="text-white" />
+      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "var(--cyan-dim)", border: "1px solid rgba(45,212,240,0.25)" }}>
+            <Wand2 size={14} style={{ color: "var(--cyan)" }} />
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-900 leading-tight">AI Slide Assistant</p>
-            <p className="text-[10px] text-gray-400">Curates your content into slides</p>
+            <p className="text-sm font-bold leading-tight" style={{ color: "var(--text-hi)" }}>AI Slide Assistant</p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--cyan)", boxShadow: "0 0 4px #2DD4F0" }} />
+              <p className="text-[10px]" style={{ color: "var(--text-lo)" }}>Curates your content into slides</p>
+            </div>
           </div>
         </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-lg transition-colors"
+          style={{ color: "var(--text-lo)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--card2)"; e.currentTarget.style.color = "var(--text-hi)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "var(--text-lo)"; }}
+        >
           <X size={16} />
         </button>
       </div>
 
       {/* Mode toggle */}
       <div className="px-4 pt-3 pb-2 flex-shrink-0">
-        <div className="flex rounded-xl overflow-hidden border border-gray-200 text-xs font-semibold">
-          <button
-            onClick={() => setMode("fast")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors ${
-              mode === "fast"
-                ? "bg-purple-600 text-white"
-                : "bg-white text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            <Zap size={12} />
-            Quick
-          </button>
-          <button
-            onClick={() => setMode("detailed")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors ${
-              mode === "detailed"
-                ? "bg-purple-600 text-white"
-                : "bg-white text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            <BarChart2 size={12} />
-            Detailed
-          </button>
+        <div className="flex rounded-xl overflow-hidden text-xs font-semibold" style={{ border: "1px solid var(--border)" }}>
+          {[["fast", Zap, "Quick"], ["detailed", BarChart2, "Detailed"]].map(([m, Icon, label]) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors"
+              style={mode === m ? { background: "var(--cyan)", color: "var(--text-inv)", fontWeight: 700 } : { color: "var(--text-lo)", background: "transparent" }}
+            >
+              <Icon size={12} />
+              {label}
+            </button>
+          ))}
         </div>
-        <p className="text-[10px] text-gray-400 mt-1.5 text-center">
-          {mode === "fast"
-            ? "Single LLM call — fast results"
-            : "Full pipeline — richer layouts & voice"}
+        <p className="text-[10px] mt-1.5 text-center" style={{ color: "var(--text-lo)" }}>
+          {mode === "fast" ? "Single LLM call — fast results" : "Full pipeline — richer layouts & voice"}
         </p>
       </div>
 
@@ -524,34 +527,28 @@ export default function AIChatPanel({ onClose }) {
       <div className="px-4 pb-2 flex-shrink-0">
         <button
           onClick={() => setShowAdvanced((v) => !v)}
-          className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex items-center gap-1 text-[11px] transition-colors"
+          style={{ color: "var(--text-lo)" }}
         >
           {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           Advanced options
         </button>
         {showAdvanced && (
           <div className="mt-2 flex gap-2">
-            <div className="flex-1">
-              <label className="block text-[10px] text-gray-500 mb-1 font-medium">Persona</label>
-              <select
-                value={persona}
-                onChange={(e) => setPersona(e.target.value)}
-                className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-purple-400 bg-gray-50"
-              >
-                {PERSONAS.map((p) => <option key={p}>{p}</option>)}
-              </select>
-            </div>
-            <div className="flex-1">
-              <label className="block text-[10px] text-gray-500 mb-1 font-medium">Density</label>
-              <select
-                value={density}
-                onChange={(e) => setDensity(e.target.value)}
-                className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-purple-400 bg-gray-50"
-                disabled={mode === "fast"}
-              >
-                {DENSITIES.map((d) => <option key={d}>{d}</option>)}
-              </select>
-            </div>
+            {[["Persona", persona, setPersona, PERSONAS, false], ["Density", density, setDensity, DENSITIES, mode === "fast"]].map(([lbl, val, setter, opts, dis]) => (
+              <div key={lbl} className="flex-1">
+                <label className="block text-[10px] mb-1 font-medium" style={{ color: "var(--text-lo)" }}>{lbl}</label>
+                <select
+                  value={val}
+                  onChange={(e) => setter(e.target.value)}
+                  disabled={dis}
+                  className="w-full text-xs rounded-lg px-2 py-1.5 focus:outline-none disabled:opacity-50"
+                  style={{ border: "1px solid var(--border)", background: "var(--card2)", color: "var(--text-hi)" }}
+                >
+                  {opts.map((o) => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -560,10 +557,10 @@ export default function AIChatPanel({ onClose }) {
       {warnings.length > 0 && (
         <div className="px-4 pt-2 flex-shrink-0 space-y-1">
           {warnings.map((w, i) => (
-            <div key={i} className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
-              <AlertTriangle size={12} className="flex-shrink-0 mt-0.5 text-amber-500" />
+            <div key={i} className="flex items-start gap-2 rounded-lg px-3 py-2 text-xs" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", color: "#fcd34d" }}>
+              <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" style={{ color: "#f59e0b" }} />
               <span className="flex-1">{w}</span>
-              <button onClick={() => setWarnings((prev) => prev.filter((_, j) => j !== i))} className="text-amber-400 hover:text-amber-600 flex-shrink-0">
+              <button onClick={() => setWarnings((prev) => prev.filter((_, j) => j !== i))} style={{ color: "#f59e0b" }}>
                 <X size={11} />
               </button>
             </div>
@@ -572,15 +569,15 @@ export default function AIChatPanel({ onClose }) {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3 min-h-0">
+      <div className="flex-1 overflow-y-auto scrollbar-dark px-4 py-2 space-y-3 min-h-0">
         {messages.map((msg, i) => (
           <MessageBubble key={i} msg={msg} onRetry={msg.canRetry ? handleRetry : null} />
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2 shadow-sm">
-              <Loader2 size={14} className="animate-spin text-purple-500" />
-              <span className="text-xs text-gray-500">
+            <div className="rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2" style={{ background: "var(--card2)", border: "1px solid var(--border)" }}>
+              <Loader2 size={14} className="animate-spin" style={{ color: "var(--cyan)" }} />
+              <span className="text-xs" style={{ color: "var(--text-mid)" }}>
                 {mode === "fast" ? "Generating slide…" : "Building your slide deck…"}
               </span>
             </div>
@@ -590,26 +587,25 @@ export default function AIChatPanel({ onClose }) {
       </div>
 
       {/* Input area */}
-      <div className="border-t border-gray-100 px-4 pt-3 pb-4 flex-shrink-0 space-y-2">
+      <div className="px-4 pt-3 pb-4 flex-shrink-0 space-y-2" style={{ borderTop: "1px solid var(--border)" }}>
         {/* Optional context */}
         <div>
           <textarea
             value={content}
             onChange={(e) => { setContent(e.target.value); setContentError(""); }}
             placeholder="Paste your source text here — reports, notes, docs, data (plain text, max ~8,000 words)"
-            className={`w-full text-xs border rounded-xl px-3 py-2 focus:outline-none resize-none bg-gray-50 placeholder:text-gray-300 ${
-              contentError ? "border-red-300 focus:border-red-400" : "border-gray-200 focus:border-purple-400"
-            }`}
+            className="w-full text-xs rounded-xl px-3 py-2 focus:outline-none resize-none panel-input"
+            style={contentError ? { borderColor: "rgba(239,68,68,0.6)" } : {}}
             rows={2}
           />
           <div className="flex justify-between items-center mt-0.5 px-0.5">
             {contentError
-              ? <p className="text-[10px] text-red-500">{contentError}</p>
+              ? <p className="text-[10px]" style={{ color: "#f87171" }}>{contentError}</p>
               : content.length >= CONTENT_SOFT_LIMIT
-              ? <p className="text-[10px] text-amber-600">Content will be intelligently trimmed to what's most relevant.</p>
+              ? <p className="text-[10px]" style={{ color: "#fbbf24" }}>Content will be intelligently trimmed to what's most relevant.</p>
               : <span />
             }
-            <p className={`text-[10px] ${content.length >= CONTENT_SOFT_LIMIT ? "text-amber-500" : "text-gray-300"}`}>
+            <p className="text-[10px]" style={{ color: content.length >= CONTENT_SOFT_LIMIT ? "#fbbf24" : "var(--text-lo)" }}>
               {content.length.toLocaleString()} chars
             </p>
           </div>
@@ -624,23 +620,22 @@ export default function AIChatPanel({ onClose }) {
               onChange={(e) => { setInstruction(e.target.value); setInstructionError(""); }}
               onKeyDown={handleKeyDown}
               placeholder='e.g. "Create a 3-slide summary of our Q4 results"'
-              className={`flex-1 text-sm border rounded-xl px-3 py-2 focus:outline-none resize-none bg-white placeholder:text-gray-300 ${
-                instructionError ? "border-red-300 focus:border-red-400" : "border-gray-200 focus:border-purple-400"
-              }`}
+              className="flex-1 text-sm rounded-xl px-3 py-2 focus:outline-none resize-none panel-input"
+              style={instructionError ? { borderColor: "rgba(239,68,68,0.6)" } : {}}
               rows={2}
             />
             <button
               onClick={handleSend}
               disabled={!instruction.trim() || loading}
-              className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition-opacity hover:opacity-90 shadow-sm"
-              style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)" }}
+              className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center disabled:opacity-40 transition-opacity"
+              style={{ background: "var(--cyan)", color: "var(--text-inv)" }}
             >
               <Send size={15} />
             </button>
           </div>
-          {instructionError && <p className="text-[10px] text-red-500 mt-0.5 px-0.5">{instructionError}</p>}
+          {instructionError && <p className="text-[10px] mt-0.5 px-0.5" style={{ color: "#f87171" }}>{instructionError}</p>}
         </div>
-        <p className="text-[10px] text-gray-300 text-center">Enter to send · Shift+Enter for new line</p>
+        <p className="text-[10px] text-center" style={{ color: "var(--text-lo)" }}>Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   );

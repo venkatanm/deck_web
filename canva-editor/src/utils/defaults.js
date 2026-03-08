@@ -1,4 +1,4 @@
-export const DEFAULT_CANVAS_SIZE = { width: 816, height: 1056, backgroundColor: '#ffffff' };
+export const DEFAULT_CANVAS_SIZE = { width: 1280, height: 720, backgroundColor: '#ffffff' };
 
 export const DEFAULT_ELEMENT_PROPS = {
   rect:     { type:'rect',     x:200, y:200, width:150, height:100, fill:'#c084fc', stroke:'', strokeWidth:0, cornerRadius:0, opacity:1, rotation:0 },
@@ -16,7 +16,7 @@ export const DEFAULT_ELEMENT_PROPS = {
 
 export const CANVAS_PRESETS = [
   { name: 'A4 Poster',         width: 816,  height: 1056 },
-  { name: 'Presentation 16:9', width: 960,  height: 540  },
+  { name: 'Presentation 16:9', width: 1280, height: 720  },
   { name: 'Instagram Post',    width: 600,  height: 600  },
   { name: 'Twitter Banner',    width: 1000, height: 333  },
   { name: 'Business Card',     width: 504,  height: 288  },

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velox — Enterprise Productivity Platform</title>
+  <meta name="description" content="Velox builds AI-powered tools for enterprise teams. Velox Decks turns any document into a brand-consistent presentation in minutes." />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- Satoshi font -->
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap" rel="stylesheet" />
+
+  <!-- Lucide icons (ESM CDN — loaded in script) -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Nav ──────────────────────────────────────────────────────────────── -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="/" class="logo-lockup" aria-label="Velox home">
+        <svg width="28" height="28" viewBox="0 0 52 52" fill="none" aria-hidden="true">
+          <path d="M8 12L26 42L44 12" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 12L20 12L26 26" stroke="#2DD4F0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="wordmark">Velox</span>
+      </a>
+
+      <div class="nav-links" id="nav-links">
+        <a href="#product">Product</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#contact">Contact</a>
+      </div>
+
+      <div class="nav-right">
+        <a href="/login" class="btn-ghost">Sign in</a>
+        <a href="/register" class="btn-primary">Get Access</a>
+      </div>
+
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu" type="button">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <!-- Mobile menu -->
+    <div class="mobile-menu" id="mobile-menu" hidden>
+      <a href="#product">Product</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#contact">Contact</a>
+      <a href="/login" class="mobile-signin">Sign in</a>
+      <a href="/register" class="btn-primary mobile-cta">Get Access</a>
+    </div>
+  </nav>
+
+
+  <!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+  <section class="hero" id="home">
+    <div class="hero-grid" aria-hidden="true"></div>
+    <div class="hero-glow" aria-hidden="true"></div>
+
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      Enterprise Productivity Platform
+    </div>
+
+    <h1 class="hero-headline">
+      Build faster.<br>
+      Present smarter.<br>
+      <span class="hero-headline-accent">Move at Velox speed.</span>
+    </h1>
+
+    <p class="hero-sub">
+      Velox builds AI-powered tools for enterprise teams who need to
+      work faster without sacrificing quality. Starting with the way
+      your team creates and presents ideas.
+    </p>
+
+    <div class="hero-cta-row">
+      <a href="/register" class="btn-primary btn-lg">
+        Get Access to Velox Decks
+      </a>
+      <a href="#product" class="btn-secondary btn-lg">
+        See the product
+      </a>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-screenshot-placeholder" id="hero-placeholder">
+        <!-- Replace with real screenshot: <img src="/images/hero-screenshot.png" alt="Velox Decks editor" class="hero-screenshot" /> -->
+        <div class="screenshot-mockup">
+          <div class="mockup-topbar">
+            <div class="mockup-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="mockup-title">Velox Decks — Q3 Strategy Review</div>
+            <div class="mockup-actions">
+              <div class="mockup-btn"></div>
+              <div class="mockup-btn accent"></div>
+            </div>
+          </div>
+          <div class="mockup-body">
+            <div class="mockup-sidebar">
+              <div class="mockup-slide-thumb active"></div>
+              <div class="mockup-slide-thumb"></div>
+              <div class="mockup-slide-thumb"></div>
+              <div class="mockup-slide-thumb"></div>
+            </div>
+            <div class="mockup-canvas">
+              <div class="mockup-canvas-heading"></div>
+              <div class="mockup-canvas-sub"></div>
+              <div class="mockup-canvas-grid">
+                <div class="mockup-card"></div>
+                <div class="mockup-card"></div>
+                <div class="mockup-card"></div>
+              </div>
+            </div>
+            <div class="mockup-ai-panel">
+              <div class="mockup-ai-header">
+                <div class="mockup-ai-dot"></div>
+                <div class="mockup-ai-label"></div>
+              </div>
+              <div class="mockup-chat-msg user"></div>
+              <div class="mockup-chat-msg ai"></div>
+              <div class="mockup-chat-msg ai short"></div>
+              <div class="mockup-ai-input"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── Product Section ──────────────────────────────────────────────────── -->
+  <section class="section" id="product">
+    <div class="section-inner">
+
+      <div class="section-header">
+        <div class="eyebrow">
+          <span class="eyebrow-dot"></span>
+          Velox Decks
+        </div>
+        <h2 class="section-title">
+          Enterprise presentations,<br>
+          at the speed of thought.
+        </h2>
+        <p class="section-body">
+          Upload any document. AI converts it to a brand-consistent deck
+          in minutes. Your brand kit applied automatically. Export to
+          PPTX, PDF, or share a live link — all from one platform.
+        </p>
+      </div>
+
+      <div class="feature-grid">
+
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2DD4F0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3 4 6l-3 1 3 1 1 3 1-3 3-1-3-1L5 3z"/><path d="M19 13l-.5 1.5-1.5.5 1.5.5.5 1.5.5-1.5 1.5-.5-1.5-.5L19 13z"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">AI Deck Generation</h3>
+          <p class="feature-body">
+            Upload any PDF, Word, or PowerPoint. AI converts it to
+            a polished, brand-consistent deck in minutes.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2DD4F0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="13.5" cy="6.5" r=".5" fill="#2DD4F0"/><circle cx="17.5" cy="10.5" r=".5" fill="#2DD4F0"/><circle cx="8.5" cy="7.5" r=".5" fill="#2DD4F0"/><circle cx="6.5" cy="12.5" r=".5" fill="#2DD4F0"/>
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">Brand Kit</h3>
+          <p class="feature-body">
+            Store your logos, colors, and fonts. Every deck — AI-generated
+            or built from scratch — applies your brand automatically.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2DD4F0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">60+ Enterprise Layouts</h3>
+          <p class="feature-body">
+            SWOT, KPI grids, Gantt charts, roadmaps, pitch decks.
+            Every format your team needs, ready to use.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2DD4F0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">Doc-to-Deck</h3>
+          <p class="feature-body">
+            Import PDF, Word, Excel, or PowerPoint. AI extracts
+            structure and converts it to presentation-ready slides.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2DD4F0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">Export Anywhere</h3>
+          <p class="feature-body">
+            Export as PDF, PPTX, or PNG. Present live from the browser
+            or hand off to PowerPoint — your choice.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2DD4F0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">AI Chat Panel</h3>
+          <p class="feature-body">
+            "Add a SWOT slide." "Make this more concise." Natural-language
+            editing that understands your deck's context.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="section-cta">
+        <a href="/register" class="btn-primary btn-lg">
+          Get Access to Velox Decks
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ── How It Works ──────────────────────────────────────────────────────── -->
+  <section class="section section-alt" id="how-it-works">
+    <div class="section-inner">
+
+      <div class="section-header">
+        <div class="eyebrow">
+          <span class="eyebrow-dot"></span>
+          How it works
+        </div>
+        <h2 class="section-title">
+          From document to boardroom<br>in three steps.
+        </h2>
+      </div>
+
+      <div class="steps-row">
+
+        <div class="step">
+          <div class="step-number">01</div>
+          <div class="step-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2DD4F0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>
+            </svg>
+          </div>
+          <h3 class="step-title">Upload your content</h3>
+          <p class="step-body">
+            Drop in a PDF, Word doc, PowerPoint, or Excel file —
+            or start from scratch using the AI chat panel.
+          </p>
+        </div>
+
+        <div class="step-connector" aria-hidden="true"></div>
+
+        <div class="step">
+          <div class="step-number">02</div>
+          <div class="step-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2DD4F0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            </svg>
+          </div>
+          <h3 class="step-title">AI builds your deck</h3>
+          <p class="step-body">
+            Velox AI extracts structure, applies your brand kit,
+            and generates a polished presentation layout automatically.
+          </p>
+        </div>
+
+        <div class="step-connector" aria-hidden="true"></div>
+
+        <div class="step">
+          <div class="step-number">03</div>
+          <div class="step-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2DD4F0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>
+            </svg>
+          </div>
+          <h3 class="step-title">Present or export</h3>
+          <p class="step-body">
+            Present directly from the browser, export to PPTX or PDF,
+            or share a live link with your stakeholders.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── Contact Section ──────────────────────────────────────────────────── -->
+  <section class="section" id="contact">
+    <div class="section-inner">
+      <div class="contact-grid">
+
+        <div class="contact-copy">
+          <div class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            Get in touch
+          </div>
+          <h2 class="section-title" style="text-align:left; max-width:400px;">
+            Ready to move<br>at Velox speed?
+          </h2>
+          <p class="section-body" style="text-align:left;">
+            Whether you're evaluating Velox Decks for your team or
+            want to talk about an enterprise rollout — we'd love to
+            hear from you.
+          </p>
+          <div class="contact-detail">
+            <span class="contact-label">Email</span>
+            <a href="mailto:hello@datavelox.com" class="contact-value">hello@datavelox.com</a>
+          </div>
+          <div class="contact-app-link">
+            <p class="contact-label" style="margin-bottom:12px;">Or jump straight in</p>
+            <a href="/register" class="btn-primary">Create a free account</a>
+          </div>
+        </div>
+
+        <div class="contact-form-wrap">
+          <form class="contact-form" id="contact-form" novalidate>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="name">Name</label>
+                <input id="name" name="name" type="text" placeholder="Your name" class="form-input" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="email">Work email</label>
+                <input id="email" name="email" type="email" placeholder="you@company.com" class="form-input" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="company">Company</label>
+              <input id="company" name="company" type="text" placeholder="Company name" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="message">Message</label>
+              <textarea id="message" name="message" rows="4"
+                placeholder="Tell us about your team and what you're looking to solve."
+                class="form-input form-textarea" required></textarea>
+            </div>
+
+            <div id="form-error" class="form-error" hidden>
+              Something went wrong. Please try again or email us directly.
+            </div>
+
+            <button type="submit" class="btn-primary btn-full" id="form-submit">
+              Send message
+            </button>
+
+            <div class="form-success" id="form-success" hidden>
+              <span class="form-success-icon">✓</span>
+              Message sent. We'll be in touch shortly.
+            </div>
+
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── Footer ────────────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="footer-inner">
+
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="/" class="logo-lockup" aria-label="Velox home">
+            <svg width="24" height="24" viewBox="0 0 52 52" fill="none" aria-hidden="true">
+              <path d="M8 12L26 42L44 12" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 12L20 12L26 26" stroke="#2DD4F0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="wordmark" style="font-size:18px;">Velox</span>
+          </a>
+          <p class="footer-tagline">Enterprise productivity tools<br>built for speed.</p>
+        </div>
+
+        <div class="footer-links-grid">
+          <div class="footer-col">
+            <h4 class="footer-col-heading">Product</h4>
+            <ul class="footer-col-links">
+              <li><a href="#product">Velox Decks</a></li>
+              <li><a href="#how-it-works">How it works</a></li>
+              <li><a href="/register">Get Access</a></li>
+              <li><a href="/login">Sign in</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4 class="footer-col-heading">Company</h4>
+            <ul class="footer-col-links">
+              <li><a href="https://veloxdata.ai">Velox Data</a></li>
+              <li><a href="#contact">Contact</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4 class="footer-col-heading">Legal</h4>
+            <ul class="footer-col-links">
+              <li><a href="/privacy">Privacy Policy</a></li>
+              <li><a href="/terms">Terms of Service</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2025 Velox Data Inc. All rights reserved.</span>
+        <span>Built with <a href="/register">Velox Decks</a></span>
+      </div>
+
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

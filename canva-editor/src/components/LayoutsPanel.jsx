@@ -4,6 +4,7 @@ import { RefreshCw, Shuffle, Sparkles, Undo2 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
 import { LAYOUT_DEFINITIONS, suggestLayouts } from "../data/layoutDefinitions";
 import { useToast } from "./Toast";
+import { track } from "../api/analytics";
 
 // Group layouts by the category field on each layout definition
 const LAYOUT_CATEGORIES = [
@@ -77,6 +78,7 @@ export default function LayoutsPanel() {
       elements: newElements.map((e) => ({ ...e, id: e.id || uuidv4() })),
       appliedLayoutId: layout.id,
     });
+    track('layout.applied', { layout_id: layout.id, layout_name: layout.name, mode: rearrangeMode ? 'rearrange' : 'fresh' });
   };
 
   const undo = useEditorStore((s) => s.undo);

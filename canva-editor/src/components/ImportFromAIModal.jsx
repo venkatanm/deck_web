@@ -10,6 +10,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
+import { track } from "../api/analytics";
 import {
   importContentSchema,
   applyBrandKitToPages,
@@ -94,6 +95,7 @@ export default function ImportFromAIModal({ onClose }) {
     setError(null);
     setResult(null);
     setConverting(true);
+    track('ai.import_started', { file_type: docFile?.name?.split('.').pop() });
 
     try {
       const form = new FormData();
@@ -115,7 +117,9 @@ export default function ImportFromAIModal({ onClose }) {
         throw new Error("Pipeline returned no usable output.");
       }
       setResult(envelope);
+      track('ai.import_completed');
     } catch (err) {
+      track('ai.import_failed', { error: err.message });
       setError(err.message);
     } finally {
       setConverting(false);

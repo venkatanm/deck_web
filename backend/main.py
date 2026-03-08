@@ -13,7 +13,7 @@ from auth import (
     create_token, get_current_user
 )
 from storage import ensure_bucket
-from routers import projects, images, brand_kit, settings, templates
+from routers import projects, images, brand_kit, settings, templates, analytics, feedback
 
 app = FastAPI(title="Canva Clone API")
 
@@ -32,6 +32,8 @@ app.include_router(images.router)
 app.include_router(brand_kit.router)
 app.include_router(settings.router)
 app.include_router(templates.router)
+app.include_router(analytics.router)
+app.include_router(feedback.router)
 
 @app.on_event("startup")
 async def startup():
@@ -48,6 +50,64 @@ async def startup():
         await conn.execute(text(
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false"
         ))
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS events (
+                id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+                name       TEXT NOT NULL,
+                properties JSONB DEFAULT '{}',
+                created_at TIMESTAMPTZ DEFAULT now()
+            )
+        """))
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS idx_events_name_time ON events(name, created_at DESC)"
+        ))
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS idx_events_user ON events(user_id, created_at DESC)"
+        ))
+
+        # Feedback tables
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS feedback (
+                id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                type           VARCHAR(20) NOT NULL,
+                survey_trigger VARCHAR(50),
+                user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                user_email     VARCHAR(255),
+                session_id     VARCHAR(100),
+                rating         SMALLINT,
+                primary_answer TEXT,
+                follow_up_text TEXT,
+                sentiment      VARCHAR(10),
+                page_context   VARCHAR(100),
+                deck_id        UUID REFERENCES projects(id) ON DELETE SET NULL,
+                app_version    VARCHAR(20),
+                created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                is_read        BOOLEAN NOT NULL DEFAULT FALSE,
+                is_archived    BOOLEAN NOT NULL DEFAULT FALSE,
+                admin_note     TEXT
+            )
+        """))
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS user_survey_state (
+                id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                trigger_key VARCHAR(50) NOT NULL,
+                status      VARCHAR(20) NOT NULL,
+                created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                UNIQUE(user_id, trigger_key)
+            )
+        """))
+        for _idx in [
+            "CREATE INDEX IF NOT EXISTS idx_feedback_user_id    ON feedback(user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_feedback_type       ON feedback(type)",
+            "CREATE INDEX IF NOT EXISTS idx_feedback_trigger    ON feedback(survey_trigger)",
+            "CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_feedback_sentiment  ON feedback(sentiment)",
+            "CREATE INDEX IF NOT EXISTS idx_feedback_unread     ON feedback(is_read) WHERE is_read = FALSE",
+            "CREATE INDEX IF NOT EXISTS idx_survey_state_user   ON user_survey_state(user_id)",
+        ]:
+            await conn.execute(text(_idx))
     ensure_bucket()
 
 # ── Auth endpoints ─────────────────────────────────

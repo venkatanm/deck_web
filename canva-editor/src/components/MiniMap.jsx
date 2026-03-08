@@ -42,7 +42,8 @@ export default function MiniMap() {
       <button
         type="button"
         onClick={() => setVisible(true)}
-        className="absolute bottom-4 right-4 z-20 bg-white border border-gray-200 shadow-lg rounded-lg px-2 py-1 text-xs text-gray-500 hover:bg-gray-50"
+        className="absolute bottom-4 right-4 z-20 rounded-lg px-2 py-1 text-xs text-velox-text-mid border"
+      style={{ background: "var(--card2)", borderColor: "var(--border)" }}
       >
         Show map
       </button>
@@ -51,15 +52,16 @@ export default function MiniMap() {
 
   return (
     <div
-      className="absolute bottom-4 right-4 z-20 bg-white border border-gray-200 shadow-xl rounded-xl overflow-hidden"
+      className="absolute bottom-4 right-4 z-20 shadow-2xl rounded-xl overflow-hidden border"
+      style={{ background: "var(--card2)", borderColor: "var(--border)" }}
       style={{ width: MINIMAP_WIDTH + 2, userSelect: "none" }}
     >
-      <div className="flex items-center justify-between px-2 py-1 border-b border-gray-100">
-        <span className="text-[10px] text-gray-400 font-medium">Navigator</span>
+      <div className="flex items-center justify-between px-2 py-1 border-b" style={{ borderColor: "var(--border)" }}>
+        <span className="text-[10px] text-velox-text-mid font-medium">Navigator</span>
         <button
           type="button"
           onClick={() => setVisible(false)}
-          className="text-gray-300 hover:text-gray-500 text-xs leading-none"
+          className="text-velox-text-lo hover:text-velox-text-hi text-xs leading-none"
         >
           ✕
         </button>
@@ -69,7 +71,7 @@ export default function MiniMap() {
         style={{
           width: MINIMAP_WIDTH,
           height: MINIMAP_HEIGHT,
-          background: "#f8fafc",
+          background: "var(--bg)",
         }}
       >
         {thumbnail ? (
@@ -85,7 +87,7 @@ export default function MiniMap() {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <span className="text-[10px] text-gray-300">Loading...</span>
+            <span className="text-[10px] text-velox-text-lo">Loading...</span>
           </div>
         )}
         <div
@@ -102,9 +104,9 @@ export default function MiniMap() {
           }}
         />
       </div>
-      <div className="px-2 py-1 border-t border-gray-100 flex items-center justify-between">
-        <span className="text-[10px] text-gray-400">{Math.round(zoom * 100)}%</span>
-        <span className="text-[10px] text-gray-400">
+      <div className="px-2 py-1 flex items-center justify-between border-t" style={{ borderColor: "var(--border)" }}>
+        <span className="text-[10px] text-velox-text-mid">{Math.round(zoom * 100)}%</span>
+        <span className="text-[10px] text-velox-text-mid">
           {canvasSize.width} × {canvasSize.height}
         </span>
       </div>

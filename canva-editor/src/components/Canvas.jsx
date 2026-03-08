@@ -1887,6 +1887,12 @@ export function Canvas({ onContextMenu }) {
     clearSelection();
   }, [currentPageId, clearSelection]);
 
+  // Auto-fit canvas to screen on mount and whenever canvas size changes
+  useEffect(() => {
+    const t = setTimeout(fitToScreen, 50);
+    return () => clearTimeout(t);
+  }, [canvasSize.width, canvasSize.height]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     const handler = (e) => {
       if (

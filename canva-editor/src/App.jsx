@@ -14,9 +14,12 @@ import LoadingScreen from "./components/LoadingScreen";
 import Onboarding from "./components/Onboarding";
 import ErrorBoundary from "./components/ErrorBoundary";
 import useEditorStore from "./store/useEditorStore";
+import useFeedback from "./store/useFeedback";
 import { useToast } from "./components/Toast.jsx";
 import GenerationStatusBar from "./components/GenerationStatusBar";
 import AIChatPanel from "./components/AIChatPanel";
+import MicroSurveyToast from "./components/feedback/MicroSurveyToast";
+import FeedbackButton from "./components/feedback/FeedbackButton";
 import { shallow } from "zustand/shallow";
 
 export default function App() {
@@ -37,12 +40,20 @@ export default function App() {
   const pages = useEditorStore((s) => s.pages);
   const canvasSize = useEditorStore((s) => s.canvasSize);
 
+  const loadSurveyState = useFeedback((s) => s.loadSurveyState);
+  const triggerSurvey   = useFeedback((s) => s.triggerSurvey);
+  const surveyStateLoaded = useFeedback((s) => s.surveyStateLoaded);
+
+  // Load brand kit + survey state once on mount
   useEffect(() => {
     useEditorStore.getState().loadBrandKit();
+    loadSurveyState();
   }, []);
 
   useEffect(() => {
     const loadAutosave = async () => {
+      const { projectId } = useEditorStore.getState();
+      if (projectId) return;
       try {
         const { getAutosave } = await import("./api/projects");
         const saved = await getAutosave();
@@ -97,6 +108,7 @@ export default function App() {
       if (autosaveRef.current) clearTimeout(autosaveRef.current);
     };
   }, [pages, canvasSize]);
+
   const setPresentMode = useEditorStore((s) => s.setPresentMode);
   const showShortcuts = useEditorStore((s) => s.showShortcuts);
   const setShowShortcuts = useEditorStore((s) => s.setShowShortcuts);
@@ -119,8 +131,20 @@ export default function App() {
 
   const title = useEditorStore((s) => s.title);
   useEffect(() => {
-    document.title = `${title || "Untitled"} — DeckWeb`;
+    document.title = `${title || "Untitled"} — Velox Decks`;
   }, [title]);
+
+  // Download modal close — trigger first_export survey after successful export
+  const handleDownloadClose = (didExport) => {
+    setShowDownload(false);
+    if (didExport) {
+      triggerSurvey("first_export", {
+        isDirty: false,
+        isModalOpen: false,
+        pageContext: "editor",
+      });
+    }
+  };
 
   return (
     <>
@@ -164,7 +188,11 @@ export default function App() {
         />
       )}
 
-      {showDownload && <DownloadModal onClose={() => setShowDownload(false)} />}
+      {showDownload && (
+        <DownloadModal
+          onClose={handleDownloadClose}
+        />
+      )}
       {showShare && <ShareModal onClose={() => setShowShare(false)} />}
 
       {presentMode && <PresentMode />}
@@ -174,6 +202,10 @@ export default function App() {
       {showAIChat && <AIChatPanel onClose={() => setShowAIChat(false)} />}
 
       <Onboarding />
+
+      {/* Feedback system — mounts once, self-manages visibility */}
+      <MicroSurveyToast />
+      <FeedbackButton />
       </div>
     </>
   );

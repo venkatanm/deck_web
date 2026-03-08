@@ -323,7 +323,7 @@ export async function pageToDataURL(page, canvasSize, scale = 1, mimeType = "ima
       });
 
       layer.draw();
-      const dataURL = stage.toDataURL({ mimeType, pixelRatio: 1 });
+      const dataURL = stage.toDataURL({ mimeType, pixelRatio: 1, quality: mimeType === 'image/jpeg' ? 0.7 : 1 });
       stage.destroy();
       document.body.removeChild(container);
       resolve(dataURL);

@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(ls d:/Deck_Web/canva-editor/.env*)",
-      "Bash(ls d:/Deck_Web/canva-editor/vite.config.*)"
+      "Bash(ls d:/Deck_Web/canva-editor/vite.config.*)",
+      "Bash(sed -i 's/  const brandKitSurveyFired = { current: false };//' /d/Deck_Web/canva-editor/src/components/BrandKitPanel.jsx)",
+      "Bash(sed -i 's/^import { useState } from \"\"react\"\";$/import { useState, useRef } from \"\"react\"\";/' /d/Deck_Web/canva-editor/src/components/BrandKitPanel.jsx)"
     ]
   }
 }

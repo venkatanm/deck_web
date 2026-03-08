@@ -52,7 +52,11 @@ function SortablePageThumb({ page, index, isActive, isSelected, stableId, onSele
 
   const handleContextMenu = (e) => {
     e.preventDefault();
-    setMenuPos({ x: e.clientX, y: e.clientY });
+    const MENU_H = 4 * 36 + 8; // 4 items × ~36px + padding
+    const MENU_W = 160;
+    const x = Math.min(e.clientX, window.innerWidth - MENU_W - 8);
+    const y = Math.min(e.clientY, window.innerHeight - MENU_H - 8);
+    setMenuPos({ x, y });
     setMenuOpen(true);
   };
 
@@ -86,23 +90,26 @@ function SortablePageThumb({ page, index, isActive, isSelected, stableId, onSele
       onClick={(e) => { onSelect(index, e.shiftKey, e.ctrlKey || e.metaKey); setCurrentPage(page.id); }}
       onContextMenu={handleContextMenu}
     >
-      <p className="absolute top-0 left-0 text-[10px] text-gray-400 -translate-y-4">
+      <p className="absolute top-0 left-0 text-[10px] -translate-y-4" style={{ color: "var(--text-lo)" }}>
         {index + 1}
       </p>
       <div
-        className={`rounded-lg overflow-hidden border-2 transition-all ${
-          isActive
-            ? "border-purple-500 shadow-md"
+        className="rounded-lg overflow-hidden border-2 transition-all"
+        style={{
+          width: thumbWidth,
+          height: thumbHeight,
+          borderColor: isActive
+            ? "var(--cyan)"
             : isSelected
-            ? "border-purple-300 shadow-sm"
-            : "border-transparent hover:border-gray-300"
-        }`}
-        style={{ width: thumbWidth, height: thumbHeight }}
+            ? "rgba(45,212,240,0.4)"
+            : "transparent",
+          boxShadow: isActive ? "0 0 0 2px rgba(45,212,240,0.2)" : undefined,
+        }}
       >
         {loading ? (
           <div
-            className="w-full h-full bg-gray-200 animate-pulse"
-            style={{ width: thumbWidth, height: thumbHeight }}
+            className="w-full h-full animate-pulse"
+            style={{ width: thumbWidth, height: thumbHeight, background: "var(--card2)" }}
           />
         ) : thumbnail ? (
           <img
@@ -113,8 +120,8 @@ function SortablePageThumb({ page, index, isActive, isSelected, stableId, onSele
           />
         ) : (
           <div
-            className="w-full h-full bg-gray-100"
-            style={{ width: thumbWidth, height: thumbHeight }}
+            className="w-full h-full"
+            style={{ width: thumbWidth, height: thumbHeight, background: "var(--card)" }}
           />
         )}
       </div>
@@ -127,40 +134,28 @@ function SortablePageThumb({ page, index, isActive, isSelected, stableId, onSele
             aria-hidden="true"
           />
           <div
-            className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[140px]"
-            style={{ left: menuPos.x, top: menuPos.y }}
+            className="fixed z-50 rounded-lg shadow-xl py-1 min-w-[140px]"
+            style={{ left: menuPos.x, top: menuPos.y, background: "var(--card)", border: "1px solid var(--border)" }}
           >
-            <button
-              type="button"
-              onClick={handleDuplicate}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-            >
-              Duplicate Page
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={pages.length === 1}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Delete Page
-            </button>
-            <button
-              type="button"
-              onClick={handleMoveLeft}
-              disabled={index === 0}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Move Left
-            </button>
-            <button
-              type="button"
-              onClick={handleMoveRight}
-              disabled={index === pages.length - 1}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Move Right
-            </button>
+            {[
+              { label: "Duplicate Page", onClick: handleDuplicate, disabled: false },
+              { label: "Delete Page", onClick: handleDelete, disabled: pages.length === 1 },
+              { label: "Move Left", onClick: handleMoveLeft, disabled: index === 0 },
+              { label: "Move Right", onClick: handleMoveRight, disabled: index === pages.length - 1 },
+            ].map(({ label, onClick, disabled }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={onClick}
+                disabled={disabled}
+                className="w-full px-4 py-2 text-left text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                style={{ color: "var(--text-hi)" }}
+                onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.background = "var(--card2)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </>
       )}
@@ -253,7 +248,7 @@ export default function PagesPanel() {
   const currentIndex = (pages || []).findIndex((p) => p.id === currentPageId);
 
   return (
-    <div className="h-[140px] bg-gray-100 border-t border-gray-200 flex items-center gap-3 px-4 overflow-x-auto scrollbar-hide">
+    <div className="h-[140px] flex items-center gap-3 px-4 overflow-x-auto scrollbar-hide" style={{ background: "var(--bg-deep)", borderTop: "1px solid var(--border)" }}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -285,7 +280,8 @@ export default function PagesPanel() {
           type="button"
           onClick={handleDeleteSelected}
           disabled={(pages || []).length <= selectedIndices.size}
-          className="flex-shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+          className="flex-shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+          style={{ background: "rgba(239,68,68,0.1)", borderColor: "rgba(239,68,68,0.3)", color: "#f87171" }}
         >
           <Trash2 size={16} />
           Delete {selectedIndices.size}
@@ -296,11 +292,13 @@ export default function PagesPanel() {
       <button
         type="button"
         onClick={addPage}
-        className="flex-shrink-0 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-purple-400 hover:bg-purple-50 transition-colors"
-        style={{ width: thumbWidth, height: thumbHeight }}
+        className="flex-shrink-0 border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition-colors"
+        style={{ width: thumbWidth, height: thumbHeight, borderColor: "rgba(107,127,160,0.4)", color: "var(--text-mid)" }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--cyan)"; e.currentTarget.style.color = "var(--cyan)"; e.currentTarget.style.background = "var(--cyan-dim)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(107,127,160,0.4)"; e.currentTarget.style.color = "var(--text-mid)"; e.currentTarget.style.background = ""; }}
       >
-        <Plus className="w-6 h-6 text-gray-400" />
-        <span className="text-xs text-gray-500 mt-1">Add page</span>
+        <Plus className="w-6 h-6" />
+        <span className="text-xs mt-1">Add page</span>
       </button>
     </div>
   );

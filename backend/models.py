@@ -87,6 +87,45 @@ class Template(Base):
     created_at    = Column(TIMESTAMP(timezone=True),
                            server_default=func.now())
 
+class Event(Base):
+    __tablename__ = "events"
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    name       = Column(Text, nullable=False)          # e.g. "project.saved"
+    properties = Column(JSONB, default=dict)           # arbitrary metadata
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+class Feedback(Base):
+    __tablename__ = "feedback"
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    type           = Column(String(20), nullable=False)   # 'survey' | 'button'
+    survey_trigger = Column(String(50))                   # 'first_export' | 'doc_to_deck' | 'brand_kit_save' | 'nps'
+    user_id        = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_email     = Column(String(255))
+    session_id     = Column(String(100))
+    rating         = Column(Integer)                      # 1–5 or 0–10 (NPS)
+    primary_answer = Column(Text)
+    follow_up_text = Column(Text)
+    sentiment      = Column(String(10))                   # 'positive' | 'neutral' | 'negative'
+    page_context   = Column(String(100))
+    deck_id        = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="SET NULL"), nullable=True)
+    app_version    = Column(String(20))
+    created_at     = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    is_read        = Column(Boolean, default=False, nullable=False)
+    is_archived    = Column(Boolean, default=False, nullable=False)
+    admin_note     = Column(Text)
+
+
+class UserSurveyState(Base):
+    __tablename__ = "user_survey_state"
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id     = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    trigger_key = Column(String(50), nullable=False)   # 'first_export' | 'doc_to_deck' | 'brand_kit_save' | 'nps'
+    status      = Column(String(20), nullable=False)   # 'answered' | 'dismissed' | 'auto_dismissed'
+    created_at  = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    __table_args__ = (UniqueConstraint("user_id", "trigger_key", name="uq_survey_state"),)
+
+
 class UserSettings(Base):
     __tablename__ = "user_settings"
     user_id         = Column(UUID(as_uuid=True),

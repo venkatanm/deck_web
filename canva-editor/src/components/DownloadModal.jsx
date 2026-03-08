@@ -3,6 +3,7 @@ import { X, Loader2 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
 import { useToast } from "./Toast.jsx";
 import { exportPNG, exportJPG, exportPDF, exportPPTX } from "../utils/exportCanvas";
+import { track } from "../api/analytics";
 
 const QUALITY_OPTIONS = [
   { value: "standard", label: "Standard (72dpi)", scale: 1 },
@@ -51,10 +52,11 @@ export default function DownloadModal({ onClose }) {
         await exportPPTX(targetPages, canvasSize, title, { stampLogo: stampLogo && !!primaryLogo });
       }
       setDone(true);
+      track('export.download', { format: fileType, all_pages: allPages, slide_count: pages.length });
       toast("Download complete!", "success");
       setTimeout(() => {
         setDone(false);
-        onClose();
+        onClose(true); // true = export succeeded, triggers survey
       }, 1500);
     } catch (e) {
       console.error(e);

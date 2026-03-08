@@ -2,10 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Brand CSS variables ──────────────────────────────────── */
+:root {
+  --bg:          #080C14;
+  --bg-deep:     #0D1220;
+  --card:        #0F1520;
+  --card2:       #141B2A;
+  --border:      rgba(30, 42, 58, 0.9);
+  --border-sub:  rgba(255, 255, 255, 0.04);
+  --cyan:        #2DD4F0;
+  --cyan-dim:    rgba(45, 212, 240, 0.12);
+  --cyan-glow:   rgba(45, 212, 240, 0.25);
+  --text-hi:     #F1F5F9;
+  --text-mid:    #B0BDD0;
+  --text-lo:     #6B7FA0;
+  --text-inv:    #080C14;
+}
+
+/* ── Reset ────────────────────────────────────────────────── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; width: 100%; overflow: hidden; }
-body { font-family: 'Inter', sans-serif; }
+body {
+  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text-hi);
+}
 
-/* Hide scrollbar but keep scroll */
+/* ── Scrollbar utilities ──────────────────────────────────── */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+.scrollbar-dark::-webkit-scrollbar { width: 4px; }
+.scrollbar-dark::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-dark::-webkit-scrollbar-thumb { background: rgba(30,42,58,0.9); border-radius: 2px; }
+.scrollbar-dark::-webkit-scrollbar-thumb:hover { background: rgba(45,212,240,0.3); }
+
+/* ── Panel inputs ─────────────────────────────────────────── */
+.panel-input {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-hi);
+  font-family: 'Satoshi', sans-serif;
+  font-size: 13px;
+  padding: 6px 10px;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.panel-input:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px var(--cyan-glow);
+}
+.panel-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-lo);
+  margin-bottom: 6px;
+}

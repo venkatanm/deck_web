@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Upload,
   Trash2,
@@ -7,6 +7,7 @@ import {
   Plus,
 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
+import useFeedback from "../store/useFeedback";
 import { useToast } from "./Toast.jsx";
 import { v4 as uuidv4 } from "uuid";
 
@@ -17,6 +18,9 @@ export default function BrandKitPanel() {
   const addBrandFont = useEditorStore((s) => s.addBrandFont);
   const addBrandLogo = useEditorStore((s) => s.addBrandLogo);
   const addBrandIcon = useEditorStore((s) => s.addBrandIcon);
+  const triggerSurvey = useFeedback((s) => s.triggerSurvey);
+  const brandKitSurveyFired = useRef(false);
+
   const addElement = useEditorStore((s) => s.addElement);
 
   const [section, setSection] = useState("logos");
@@ -226,6 +230,10 @@ function ColorsSection({ brandKit, addBrandColor, setBrandKit }) {
     });
     setNewName("");
     toast("Brand color added", "success");
+    if (!brandKitSurveyFired.current) {
+      brandKitSurveyFired.current = true;
+      triggerSurvey("brand_kit_save", { isDirty: false, isModalOpen: false, pageContext: "brand-kit" });
+    }
   };
 
   const applyBrandColors = () => {
