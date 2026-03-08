@@ -32,7 +32,7 @@ export const BLANK_TEMPLATE = {
   category: 'Default',
   tags: ['blank', 'empty', 'default', 'clean'],
   thumbnail: { bg: '#ffffff', accent: '#e2e8f0' },
-  canvasSize: { width: 1920, height: 1080, backgroundColor: '#ffffff' },
+  canvasSize: { width: 1280, height: 720, backgroundColor: '#ffffff' },
   slides: [{ elements: [] }],
 };
 

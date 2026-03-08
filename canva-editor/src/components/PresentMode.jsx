@@ -49,22 +49,26 @@ export default function PresentMode() {
 
   return (
     <div className="fixed inset-0 bg-black z-[9999] flex flex-col">
-      {/* Canvas area */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      {/* Canvas area — leaves 52px for the nav bar */}
+      <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 52px)' }}>
         {loading ? (
           <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin" />
         ) : previewSrc ? (
           <img
             src={previewSrc}
             alt="Presentation"
-            className="max-w-[90vw] max-h-[90vh] object-contain shadow-2xl rounded"
-            style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}
+            className="object-contain"
+            style={{
+              maxWidth: '100vw',
+              maxHeight: 'calc(100vh - 52px)',
+              boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+            }}
           />
         ) : null}
       </div>
 
       {/* Navigation bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur py-3 flex items-center justify-center gap-6">
+      <div className="h-[52px] bg-black/80 backdrop-blur flex items-center justify-center gap-6">
         <button
           type="button"
           onClick={handlePrev}

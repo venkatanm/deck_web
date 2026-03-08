@@ -1547,7 +1547,7 @@ function FrameElement({ el, commonProps, shapeRef, transformerRef, isSelected, s
           />
         ) : (
           <>
-            <Rect x={0} y={0} width={w} height={h} fill="#f1f5f9" listening={false} />
+            <Rect x={0} y={0} width={w} height={h} fill="#f1f5f9" />
             <KonvaText
               x={0}
               y={h / 2 - 10}

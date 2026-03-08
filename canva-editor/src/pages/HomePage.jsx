@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
 import { LAYOUT_DEFINITIONS } from "../data/layoutDefinitions";
+import { PRESENTATION_TEMPLATES } from "../data/presentationTemplates";
 import { v4 as uuidv4 } from "uuid";
 import { logout } from "../api/auth";
 import { useToast } from "../components/Toast";
@@ -455,40 +456,61 @@ export default function HomePage() {
     }
   };
 
+  // Map homepage starter IDs to PRESENTATION_TEMPLATES IDs
+  const STARTER_TO_TEMPLATE_ID = {
+    business: "pitch-deck-dark",
+    corporate: "corporate-report",
+    minimal:   "minimalist-light",
+    strategy:  "consulting",
+    data:      "tech-product",
+  };
+
   const handleUseTemplate = (tpl) => {
     newDesign();
 
     if (!tpl.isBlank) {
-      const canvasW = 1280;
-      const canvasH = 720;
-      setCanvasSize({ width: canvasW, height: canvasH, backgroundColor: tpl.bg ?? "#ffffff" });
+      const templateId = STARTER_TO_TEMPLATE_ID[tpl.id];
+      const fullTemplate = templateId && PRESENTATION_TEMPLATES.find((t) => t.id === templateId);
 
-      const TEMPLATE_LAYOUTS = {
-        business: ["title-center", "title-bullets", "two-column", "big-number"],
-        corporate: ["title-center", "title-bullets", "two-column", "image-right"],
-        minimal:   ["title-center-centered", "title-bullets", "two-column"],
-        strategy:  ["title-center", "big-number", "before-after", "title-bullets"],
-        data:      ["title-center", "big-number", "two-column", "title-bullets"],
-      };
-
-      const layoutIds = TEMPLATE_LAYOUTS[tpl.id] ?? ["title-center", "title-bullets"];
-      const layoutMap = Object.fromEntries(LAYOUT_DEFINITIONS.map((l) => [l.id, l]));
-      const textColor = tpl.bg === "#ffffff" ? "#111111" : "#ffffff";
-      const accentColor = tpl.accent ?? "#2563eb";
-
-      const slides = layoutIds.map((lid) => {
-        const layout = layoutMap[lid];
-        const elements = layout
-          ? layout.generate({ width: canvasW, height: canvasH }).map((el) => ({
-              ...el,
-              fill: el.type === "text" ? textColor : (el.fill === "#111111" ? accentColor : el.fill),
-              stroke: el.stroke === "#111111" ? accentColor : el.stroke,
-            }))
-          : [];
-        return { id: uuidv4(), elements, backgroundColor: tpl.bg ?? null };
-      });
-
-      setPages(slides);
+      if (fullTemplate) {
+        // Load the full pre-built template
+        const newPages = fullTemplate.slides.map((slide, i) => ({
+          id: uuidv4(),
+          name: `Slide ${i + 1}`,
+          backgroundColor: slide.backgroundColor ?? fullTemplate.canvasSize?.backgroundColor ?? null,
+          elements: (slide.elements || []).map((el) => ({ ...el, id: uuidv4() })),
+        }));
+        setPages(newPages);
+        setCanvasSize(fullTemplate.canvasSize || { width: 1280, height: 720, backgroundColor: "#ffffff" });
+      } else {
+        // Fallback: generate from layouts
+        const canvasW = 1280;
+        const canvasH = 720;
+        setCanvasSize({ width: canvasW, height: canvasH, backgroundColor: tpl.bg ?? "#ffffff" });
+        const TEMPLATE_LAYOUTS = {
+          business: ["title-center", "title-bullets", "two-column", "big-number"],
+          corporate: ["title-center", "title-bullets", "two-column", "image-right"],
+          minimal:   ["title-center-centered", "title-bullets", "two-column"],
+          strategy:  ["title-center", "big-number", "before-after", "title-bullets"],
+          data:      ["title-center", "big-number", "two-column", "title-bullets"],
+        };
+        const layoutIds = TEMPLATE_LAYOUTS[tpl.id] ?? ["title-center", "title-bullets"];
+        const layoutMap = Object.fromEntries(LAYOUT_DEFINITIONS.map((l) => [l.id, l]));
+        const textColor = tpl.bg === "#ffffff" ? "#111111" : "#ffffff";
+        const accentColor = tpl.accent ?? "#2563eb";
+        const slides = layoutIds.map((lid) => {
+          const layout = layoutMap[lid];
+          const elements = layout
+            ? layout.generate({ width: canvasW, height: canvasH }).map((el) => ({
+                ...el,
+                fill: el.type === "text" ? textColor : (el.fill === "#111111" ? accentColor : el.fill),
+                stroke: el.stroke === "#111111" ? accentColor : el.stroke,
+              }))
+            : [];
+          return { id: uuidv4(), elements, backgroundColor: tpl.bg ?? null };
+        });
+        setPages(slides);
+      }
     }
 
     navigate("/editor");

@@ -76,13 +76,14 @@ export default function DownloadModal({ onClose }) {
       <div
         className="bg-white rounded-2xl shadow-2xl p-6 w-96"
         onClick={(e) => e.stopPropagation()}
+        style={{ color: '#111827' }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-800">Download</h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded hover:bg-gray-100"
+            className="p-1 rounded hover:bg-gray-100 text-gray-500"
             aria-label="Close"
           >
             <X size={20} />
@@ -91,7 +92,7 @@ export default function DownloadModal({ onClose }) {
 
         {/* File type */}
         <div className="mb-4">
-          <p className="text-xs font-medium text-gray-500 mb-2">File type</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">File type</p>
           <div className="grid grid-cols-2 gap-2">
             {[
               { id: "png", label: "PNG", sub: "Best for images with transparency" },
@@ -105,21 +106,21 @@ export default function DownloadModal({ onClose }) {
                 type="button"
                 onClick={() => !opt.disabled && setFileType(opt.id)}
                 disabled={opt.disabled}
-                className={`p-3 rounded-lg border-2 text-left transition-colors ${
+                className={`p-3 rounded-xl border-2 text-left transition-colors ${
                   fileType === opt.id && !opt.disabled
-                    ? "border-purple-500 bg-purple-50"
-                    : "border-gray-200 hover:border-gray-300"
-                } ${opt.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                } ${opt.disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
               >
-                <span className="font-medium text-sm">{opt.label}</span>
-                <p className="text-xs text-gray-500 mt-0.5">{opt.sub}</p>
+                <span className="block font-semibold text-sm text-gray-800">{opt.label}</span>
+                <span className="block text-xs text-gray-500 mt-0.5 leading-snug">{opt.sub}</span>
                 {opt.badge && (
-                  <span className="inline-block mt-1 text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
+                  <span className="inline-block mt-1 text-[10px] bg-amber-100 text-amber-700 font-medium px-1.5 py-0.5 rounded">
                     ⭐ {opt.badge}
                   </span>
                 )}
                 {opt.disabled && (
-                  <span className="inline-block mt-1 text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">
+                  <span className="inline-block mt-1 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
                     Coming soon
                   </span>
                 )}
@@ -131,8 +132,8 @@ export default function DownloadModal({ onClose }) {
         {/* Quality (PNG/JPG only) */}
         {(fileType === "png" || fileType === "jpg") && (
           <div className="mb-4">
-            <p className="text-xs font-medium text-gray-500 mb-2">Quality</p>
-            <div className="flex gap-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Quality</p>
+            <div className="flex flex-col gap-2">
               {QUALITY_OPTIONS.map((opt) => (
                 <label
                   key={opt.value}
@@ -144,9 +145,9 @@ export default function DownloadModal({ onClose }) {
                     value={opt.value}
                     checked={quality === opt.value}
                     onChange={() => setQuality(opt.value)}
-                    className="accent-purple-600"
+                    className="accent-blue-600 w-4 h-4"
                   />
-                  <span className="text-sm">{opt.label}</span>
+                  <span className="text-sm text-gray-700">{opt.label}</span>
                 </label>
               ))}
             </div>
@@ -161,11 +162,11 @@ export default function DownloadModal({ onClose }) {
                 type="checkbox"
                 checked={stampLogo}
                 onChange={(e) => setStampLogo(e.target.checked)}
-                className="accent-purple-600"
+                className="accent-blue-600 w-4 h-4"
               />
-              <span className="text-sm">Stamp brand logo on each slide</span>
+              <span className="text-sm text-gray-700">Stamp brand logo on each slide</span>
             </label>
-            <p className="text-xs text-gray-500 mt-0.5 ml-6">
+            <p className="text-xs text-gray-400 mt-0.5 ml-6">
               Adds your primary logo to the bottom-right of every slide
             </p>
           </div>
@@ -174,7 +175,7 @@ export default function DownloadModal({ onClose }) {
         {/* Pages (multi-page for PDF and PPTX) */}
         {pages.length > 1 && (fileType === "pdf" || fileType === "pptx") && (
           <div className="mb-4">
-            <p className="text-xs font-medium text-gray-500 mb-2">Pages</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Pages</p>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -182,9 +183,9 @@ export default function DownloadModal({ onClose }) {
                   name="pages"
                   checked={!allPages}
                   onChange={() => setAllPages(false)}
-                  className="accent-purple-600"
+                  className="accent-blue-600 w-4 h-4"
                 />
-                <span className="text-sm">Current page only</span>
+                <span className="text-sm text-gray-700">Current page only</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -192,9 +193,9 @@ export default function DownloadModal({ onClose }) {
                   name="pages"
                   checked={allPages}
                   onChange={() => setAllPages(true)}
-                  className="accent-purple-600"
+                  className="accent-blue-600 w-4 h-4"
                 />
-                <span className="text-sm">All pages</span>
+                <span className="text-sm text-gray-700">All pages</span>
               </label>
             </div>
           </div>
@@ -204,7 +205,7 @@ export default function DownloadModal({ onClose }) {
           type="button"
           onClick={handleDownload}
           disabled={loading || fileType === "svg"}
-          className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg py-2.5 font-medium flex items-center justify-center gap-2"
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl py-2.5 font-semibold flex items-center justify-center gap-2 transition-colors"
         >
           {loading ? (
             <>

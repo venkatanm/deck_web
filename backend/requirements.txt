@@ -9,4 +9,5 @@ minio==7.2.7
 pydantic-settings==2.2.1
 pydantic[email]==2.7.1
 python-pptx==0.6.23
+Pillow>=11.0.0
 lxml==5.2.1

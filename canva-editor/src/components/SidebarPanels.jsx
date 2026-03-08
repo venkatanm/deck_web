@@ -103,10 +103,16 @@ export function TemplatesPanel() {
     }
   };
 
-  const removeUserTemplate = (id) => {
+  const removeUserTemplate = async (id) => {
     const updated = userTemplates.filter((t) => t.id !== id);
     setUserTemplates(updated);
     sessionStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(updated));
+    try {
+      const { deleteTemplate } = await import("../api/templates");
+      await deleteTemplate(id);
+    } catch {
+      // Ignore — already removed from local state
+    }
   };
 
   return (
@@ -198,7 +204,7 @@ function TemplateCard({ template, isUserTemplate, onRemove }) {
     const newPages = template.slides.map((slide, i) => ({
       id: uuidv4(),
       name: `Slide ${i + 1}`,
-      backgroundColor: null,
+      backgroundColor: slide.backgroundColor || null,
       elements: (slide.elements || []).map((el) => ({ ...el, id: uuidv4() })),
     }));
 
@@ -260,8 +266,8 @@ function TemplateCard({ template, isUserTemplate, onRemove }) {
         {isUserTemplate && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onRemove?.(template.id); }}
-            className="absolute top-2 right-2 w-6 h-6 bg-black/50 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRemove?.(template.id); }}
+            className="absolute top-2 right-2 w-6 h-6 bg-black/50 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
             title="Remove"
           >
             <X size={12} />

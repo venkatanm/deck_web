@@ -40,7 +40,7 @@ const useEditorStore = create((set, get) => ({
   selectedId: null,
   selectedIds: [],
   canvasSize: { ...DEFAULT_CANVAS_SIZE },
-  zoom: 1,
+  zoom: 0.8,
   showGrid: false,
   showRulers: false,
   snapEnabled: true,
