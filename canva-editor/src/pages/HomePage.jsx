@@ -10,6 +10,7 @@ import {
   Edit3,
   Copy,
   LogOut,
+  HelpCircle,
   LayoutTemplate,
   Shield,
   ChevronRight,
@@ -575,6 +576,11 @@ export default function HomePage() {
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold truncate text-gray-800">{userEmail || "Account"}</p>
             </div>
+            <button type="button" onClick={() => window.open("/help", "_blank")} title="Help Center"
+              className="p-1 rounded-md text-gray-400 hover:text-blue-500 transition-colors flex-shrink-0"
+            >
+              <HelpCircle size={14} />
+            </button>
             <button type="button" onClick={logout} title="Sign out"
               className="p-1 rounded-md text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
             >

@@ -134,14 +134,31 @@ export default function TopBar({ onShare, onDownload, onPresent, showAIChat, onT
           Import
         </button>
 
-        <button
-          type="button"
-          onClick={() => setShowShortcuts(true)}
-          title="Keyboard shortcuts (?)"
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-        >
-          <HelpCircle size={16} strokeWidth={1.5} />
-        </button>
+        <div className="relative group">
+          <button
+            type="button"
+            title="Help"
+            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <HelpCircle size={16} strokeWidth={1.5} />
+          </button>
+          <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+            <button
+              type="button"
+              onClick={() => setShowShortcuts(true)}
+              className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            >
+              <span>⌨️</span> Keyboard shortcuts
+            </button>
+            <button
+              type="button"
+              onClick={() => window.open("/help", "_blank")}
+              className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            >
+              <span>📖</span> Help Center
+            </button>
+          </div>
+        </div>
 
         {/* Share */}
         <button
