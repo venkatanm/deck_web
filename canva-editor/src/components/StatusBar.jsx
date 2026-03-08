@@ -18,7 +18,7 @@ function InlineFeedback() {
   const [category, setCategory] = useState(null);
   const activeSurvey = useFeedback((s) => s.activeSurvey);
   const submitButtonFeedback = useFeedback((s) => s.submitButtonFeedback);
-  const currentPageId = useEditorStore((s) => s.currentPageId);
+  const projectId = useEditorStore((s) => s.projectId);
 
   if (activeSurvey) return null;
 
@@ -27,7 +27,7 @@ function InlineFeedback() {
     if (!trimmed) return;
     submitButtonFeedback(
       category ? `[${category}] ${trimmed}` : trimmed,
-      { pageContext: "editor", deckId: currentPageId ?? null }
+      { pageContext: "editor", deckId: projectId ?? null }
     );
     setState("submitted");
     setTimeout(() => { setState("idle"); setText(""); setCategory(null); }, 2000);
