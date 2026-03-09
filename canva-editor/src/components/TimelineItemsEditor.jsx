@@ -9,7 +9,7 @@ function EditorShell({ title, onClose, onSave, children }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-2xl shadow-2xl w-full max-w-2xl max-h-[70vh] flex flex-col"
+        className="bg-white rounded-t-2xl shadow-2xl w-full max-w-2xl max-h-[70vh] flex flex-col text-gray-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">

@@ -159,19 +159,19 @@ export default function StatBlockToolbar({ el }) {
       {el.subtype === "kpi" && (
         <>
           <input
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-20"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-20"
             placeholder="Value"
             value={el.value || ""}
             onChange={(e) => update({ value: e.target.value })}
           />
           <input
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-24"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-24"
             placeholder="Label"
             value={el.label || ""}
             onChange={(e) => update({ label: e.target.value })}
           />
           <input
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-16"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-16"
             placeholder="Trend"
             value={el.trend || ""}
             onChange={(e) => update({ trend: e.target.value })}
@@ -194,13 +194,13 @@ export default function StatBlockToolbar({ el }) {
             type="number"
             min={0}
             max={100}
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-16"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-16"
             placeholder="Value %"
             value={el.value ?? 0}
             onChange={(e) => update({ value: Number(e.target.value) })}
           />
           <input
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-32"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-32"
             placeholder="Label"
             value={el.label || ""}
             onChange={(e) => update({ label: e.target.value })}
@@ -211,25 +211,25 @@ export default function StatBlockToolbar({ el }) {
       {el.subtype === "comparison" && (
         <>
           <input
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-16"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-16"
             placeholder="Left val"
             value={el.leftValue || ""}
             onChange={(e) => update({ leftValue: e.target.value })}
           />
           <input
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-24"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-24"
             placeholder="Left label"
             value={el.leftLabel || ""}
             onChange={(e) => update({ leftLabel: e.target.value })}
           />
           <input
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-16"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-16"
             placeholder="Right val"
             value={el.rightValue || ""}
             onChange={(e) => update({ rightValue: e.target.value })}
           />
           <input
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-24"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-24"
             placeholder="Right label"
             value={el.rightLabel || ""}
             onChange={(e) => update({ rightLabel: e.target.value })}
@@ -240,13 +240,13 @@ export default function StatBlockToolbar({ el }) {
       {el.subtype === "iconStat" && (
         <>
           <input
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-24"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-24"
             placeholder="Icon name"
             value={el.iconName || ""}
             onChange={(e) => update({ iconName: e.target.value })}
           />
           <input
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-20"
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-20"
             placeholder="Value"
             value={el.value || ""}
             onChange={(e) => update({ value: e.target.value })}

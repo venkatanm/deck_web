@@ -10,8 +10,44 @@ import {
   Search,
   Check,
   Star,
+  List,
+  IndentIncrease,
+  IndentDecrease,
 } from "lucide-react";
 import useEditorStore from "../store/useEditorStore";
+
+export const BULLET_CHARS = {
+  bullet: "•",
+  dash: "–",
+  arrow: "▸",
+  numbered: null, // handled specially
+};
+
+export function applyBullets(text, listType, listIndent = 0) {
+  if (!listType) return text;
+  const indent = "    ".repeat(listIndent || 0);
+  return text.split("\n").map((line, i) => {
+    const prefix = listType === "numbered" ? `${i + 1}. ` : `${BULLET_CHARS[listType]} `;
+    return indent + prefix + line;
+  }).join("\n");
+}
+
+export function stripBullets(text, listType, listIndent = 0) {
+  if (!listType) return text;
+  const indent = "    ".repeat(listIndent || 0);
+  return text.split("\n").map((line) => {
+    let s = line;
+    if (indent && s.startsWith(indent)) s = s.slice(indent.length);
+    if (listType === "numbered") {
+      s = s.replace(/^\d+\.\s*/, "");
+    } else {
+      const ch = BULLET_CHARS[listType];
+      if (s.startsWith(ch + " ")) s = s.slice(ch.length + 1);
+      else if (s.startsWith(ch)) s = s.slice(ch.length);
+    }
+    return s;
+  }).join("\n");
+}
 
 const BASE_FONTS = [
   { name: "Inter", family: "Inter" },
@@ -53,6 +89,8 @@ const ToolBtn = ({ onClick, active, disabled, title, children }) => (
 const ColorPickerBtn = ({ value, onChange, label, brandColors = [] }) => {
   const [open, setOpen] = useState(false);
   const [localColor, setLocalColor] = useState(value || "#000000");
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef(null);
   const kit = useEditorStore((s) => s.brandKit);
   const allBrandColors = brandColors.length > 0 ? brandColors : kit?.colors || [];
 
@@ -65,12 +103,21 @@ const ColorPickerBtn = ({ value, onChange, label, brandColors = [] }) => {
     onChange(c);
   };
 
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen((o) => !o);
+  };
+
   return (
-    <div className="relative flex-shrink-0 group/cp">
+    <div className="relative flex-shrink-0">
       <button
+        ref={btnRef}
         type="button"
         title={label}
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleOpen}
         className="flex items-center gap-1.5 px-2 py-1 border border-gray-200 rounded-lg hover:border-purple-400 transition-colors"
       >
         <div
@@ -86,11 +133,14 @@ const ColorPickerBtn = ({ value, onChange, label, brandColors = [] }) => {
       {open && (
         <>
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[9998]"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 z-[9999] min-w-[140px]">
+          <div
+            className="fixed bg-white border border-gray-200 rounded-xl shadow-2xl p-3 z-[9999] min-w-[160px] text-gray-900"
+            style={{ top: dropPos.top, left: dropPos.left }}
+          >
             {allBrandColors.length > 0 && (
               <>
                 <p className="text-[9px] text-blue-600 font-bold uppercase tracking-wide mb-1.5 px-1">
@@ -101,9 +151,7 @@ const ColorPickerBtn = ({ value, onChange, label, brandColors = [] }) => {
                     <button
                       key={c.id}
                       title={c.name}
-                      onClick={() => {
-                        handleChange(c.hex);
-                      }}
+                      onClick={() => { handleChange(c.hex); setOpen(false); }}
                       className="w-6 h-6 rounded-md border-2 border-transparent hover:border-gray-400 transition-all hover:scale-110"
                       style={{ background: c.hex }}
                     />
@@ -115,7 +163,7 @@ const ColorPickerBtn = ({ value, onChange, label, brandColors = [] }) => {
               type="color"
               value={localColor}
               onChange={(e) => handleChange(e.target.value)}
-              className="w-full h-6 cursor-pointer rounded"
+              className="w-full h-8 cursor-pointer rounded"
             />
             <input
               type="text"
@@ -125,7 +173,7 @@ const ColorPickerBtn = ({ value, onChange, label, brandColors = [] }) => {
                   handleChange(e.target.value || "#000000");
                 }
               }}
-              className="mt-2 w-full text-center text-xs border border-gray-200 rounded px-2 py-1 font-mono"
+              className="mt-2 w-full text-center text-xs border border-gray-200 rounded px-2 py-1 font-mono text-gray-900"
               maxLength={7}
             />
           </div>
@@ -170,6 +218,8 @@ function FontOption({ font, active, onClick }) {
 function FontPicker({ value, fonts, brandFonts, onChange }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef();
   const ref = useRef();
 
   useEffect(() => {
@@ -186,10 +236,19 @@ function FontPicker({ value, fonts, brandFonts, onChange }) {
   const brandFiltered = filtered.filter((f) => f.isBrand);
   const sysFiltered = filtered.filter((f) => !f.isBrand);
 
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen((o) => !o);
+  };
+
   return (
     <div ref={ref} className="relative flex-shrink-0">
       <button
-        onClick={() => setOpen((o) => !o)}
+        ref={btnRef}
+        onClick={handleOpen}
         className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-800 hover:border-blue-400 min-w-[130px] max-w-[160px] truncate bg-white"
         style={{ fontFamily: value }}
       >
@@ -198,7 +257,10 @@ function FontPicker({ value, fonts, brandFonts, onChange }) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl z-[9999] overflow-hidden">
+        <>
+          <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} aria-hidden="true" />
+          <div className="fixed w-64 bg-white border border-gray-200 rounded-xl shadow-2xl z-[9999] overflow-hidden text-gray-900"
+            style={{ top: dropPos.top, left: dropPos.left }}>
           <div className="p-2 border-b border-gray-100">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
@@ -207,7 +269,7 @@ function FontPicker({ value, fonts, brandFonts, onChange }) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search fonts..."
-                className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
+                className="w-full pl-7 pr-3 py-1.5 text-xs text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
               />
             </div>
           </div>
@@ -250,6 +312,7 @@ function FontPicker({ value, fonts, brandFonts, onChange }) {
             ))}
           </div>
         </div>
+        </>
       )}
     </div>
   );
@@ -270,8 +333,8 @@ export default function TextToolbar({ el }) {
   ];
 
   return (
-    <div className="bg-white border-b border-gray-200 flex flex-col">
-      <div className="h-11 flex items-center px-3 gap-1.5 border-b border-gray-100 overflow-x-auto">
+    <div className="bg-white border-b border-gray-200 text-gray-900">
+      <div className="h-12 flex items-center px-3 gap-1.5 overflow-x-auto">
         <FontPicker
           value={el.fontFamily || "Inter"}
           fonts={allFonts}
@@ -355,6 +418,41 @@ export default function TextToolbar({ el }) {
 
         <Divider />
 
+        {/* Bullet / List controls */}
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          {[
+            { type: "bullet", label: "• Bullets", char: "•" },
+            { type: "dash",   label: "– Dashes",  char: "–" },
+            { type: "arrow",  label: "▸ Arrows",  char: "▸" },
+            { type: "numbered", label: "1. Numbered", char: "1." },
+          ].map(({ type, label, char }) => (
+            <ToolBtn
+              key={type}
+              active={el.listType === type}
+              title={label}
+              onClick={() => update({ listType: el.listType === type ? null : type, listIndent: el.listIndent || 0 })}
+            >
+              <span className="text-[11px] font-bold w-4 text-center">{char}</span>
+            </ToolBtn>
+          ))}
+        </div>
+        <ToolBtn
+          title="Decrease indent"
+          disabled={!el.listType || !(el.listIndent > 0)}
+          onClick={() => update({ listIndent: Math.max(0, (el.listIndent || 0) - 1) })}
+        >
+          <IndentDecrease className="w-4 h-4" />
+        </ToolBtn>
+        <ToolBtn
+          title="Increase indent"
+          disabled={!el.listType}
+          onClick={() => update({ listIndent: Math.min(3, (el.listIndent || 0) + 1) })}
+        >
+          <IndentIncrease className="w-4 h-4" />
+        </ToolBtn>
+
+        <Divider />
+
         <ToolBtn
           active={el.align === "left"}
           onClick={() => update({ align: "left" })}
@@ -409,9 +507,8 @@ export default function TextToolbar({ el }) {
 
         <Divider />
         <OpacityControl value={el.opacity} onChange={(v) => update({ opacity: v })} />
-      </div>
 
-      <div className="h-10 flex items-center px-3 gap-2 overflow-x-auto">
+        <Divider />
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="text-[10px] text-gray-400 uppercase tracking-wide">
             Spacing

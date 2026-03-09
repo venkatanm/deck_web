@@ -38,7 +38,7 @@ const TableElement = React.memo(function TableElement({ el, zoom }) {
     opacity: el.opacity ?? 1,
     transform: `rotate(${el.rotation || 0}deg)`,
     transformOrigin: "top left",
-    pointerEvents: isSelected ? "auto" : "auto",
+    pointerEvents: isSelected ? "auto" : "none",
     overflow: "hidden",
   };
 

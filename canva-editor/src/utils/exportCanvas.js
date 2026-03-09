@@ -472,7 +472,7 @@ export async function exportPPTX(pages, canvasSize, title = "Presentation", expo
 
       switch (el.type) {
         case "text": {
-          slide.addText(el.text || "", {
+          const textOpts = {
             ...opts,
             fontSize: Math.round((el.fontSize || 24) * 0.75),
             bold: (el.fontStyle || "").includes("bold"),
@@ -484,7 +484,20 @@ export async function exportPPTX(pages, canvasSize, title = "Presentation", expo
             valign: "top",
             wrap: true,
             transparency: Math.round((1 - (el.opacity ?? 1)) * 100),
-          });
+          };
+          if (el.listType) {
+            const lines = (el.text || "").split("\n");
+            const indent = el.listIndent || 0;
+            const pptxLines = lines.map((line, i) => {
+              const bulletOpt = el.listType === "numbered"
+                ? { type: "number", indent: indent * 457200 }
+                : { character: { code: el.listType === "dash" ? "2013" : el.listType === "arrow" ? "25B8" : "2022" }, indent: indent * 457200 };
+              return { text: line, options: { bullet: bulletOpt } };
+            });
+            slide.addText(pptxLines, textOpts);
+          } else {
+            slide.addText(el.text || "", textOpts);
+          }
           break;
         }
 

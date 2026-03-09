@@ -441,6 +441,7 @@ export default function AIChatPanel({ onClose }) {
     // 1. Local intent short-circuit — no API call needed
     const localIntent = classifyLocalIntent(trimmed);
     if (localIntent) {
+      setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
       setInstruction("");
       const result = executeLocalIntent(localIntent.type, localIntent);
       setMessages((prev) => [...prev, { role: "assistant", text: result, slideCount: 0 }]);
@@ -494,6 +495,7 @@ export default function AIChatPanel({ onClose }) {
     const userMsgText = autoExtracted
       ? trimmed
       : `${trimmed}\n\nContext: ${resolvedContent}`;
+    setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
     setInstruction("");
     setContent("");
     doSend(body, userMsgText, numSlides);

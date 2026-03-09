@@ -39,7 +39,7 @@ export default function ChartDataEditor({ el, onClose }) {
               <tr key={i} className="hover:bg-gray-50">
                 <td className="border border-gray-200 p-1">
                   <input
-                    className="w-full px-2 py-1 text-xs outline-none focus:bg-purple-50 rounded"
+                    className="w-full px-2 py-1 text-xs text-gray-900 outline-none focus:bg-purple-50 rounded"
                     value={row.label || ''}
                     onChange={e => {
                       const d = [...data];
@@ -51,7 +51,7 @@ export default function ChartDataEditor({ el, onClose }) {
                 <td className="border border-gray-200 p-1">
                   <input
                     type="number"
-                    className="w-full px-2 py-1 text-xs outline-none focus:bg-purple-50 rounded"
+                    className="w-full px-2 py-1 text-xs text-gray-900 outline-none focus:bg-purple-50 rounded"
                     value={row.value ?? 0}
                     onChange={e => {
                       const d = [...data];
@@ -92,7 +92,7 @@ export default function ChartDataEditor({ el, onClose }) {
             max={100}
             value={progressValue}
             onChange={e => setProgressValue(Number(e.target.value))}
-            className="w-20 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-purple-400"
+            className="w-20 px-2 py-1 text-xs text-gray-900 border border-gray-200 rounded focus:outline-none focus:border-purple-400"
           />
         </div>
       </DataEditorShell>
@@ -118,7 +118,7 @@ export default function ChartDataEditor({ el, onClose }) {
                 <td className="border border-gray-200 p-1">
                   <input
                     type="number"
-                    className="w-full px-2 py-1 text-xs outline-none focus:bg-purple-50 rounded"
+                    className="w-full px-2 py-1 text-xs text-gray-900 outline-none focus:bg-purple-50 rounded"
                     value={row.x ?? 0}
                     onChange={e => {
                       const d = [...data];
@@ -130,7 +130,7 @@ export default function ChartDataEditor({ el, onClose }) {
                 <td className="border border-gray-200 p-1">
                   <input
                     type="number"
-                    className="w-full px-2 py-1 text-xs outline-none focus:bg-purple-50 rounded"
+                    className="w-full px-2 py-1 text-xs text-gray-900 outline-none focus:bg-purple-50 rounded"
                     value={row.y ?? 0}
                     onChange={e => {
                       const d = [...data];
@@ -142,7 +142,7 @@ export default function ChartDataEditor({ el, onClose }) {
                 <td className="border border-gray-200 p-1">
                   <input
                     type="number"
-                    className="w-full px-2 py-1 text-xs outline-none focus:bg-purple-50 rounded"
+                    className="w-full px-2 py-1 text-xs text-gray-900 outline-none focus:bg-purple-50 rounded"
                     value={row.z ?? 0}
                     onChange={e => {
                       const d = [...data];
@@ -195,7 +195,7 @@ export default function ChartDataEditor({ el, onClose }) {
                 ns[i] = { ...ns[i], name: e.target.value };
                 setSeries(ns);
               }}
-              className="text-xs w-20 outline-none bg-transparent"
+              className="text-xs w-20 text-gray-900 outline-none bg-transparent"
             />
             {series.length > 1 && (
               <button onClick={() => {
@@ -243,7 +243,7 @@ export default function ChartDataEditor({ el, onClose }) {
             <tr key={i} className="hover:bg-gray-50">
               <td className="border border-gray-200 p-1">
                 <input
-                  className="w-full px-2 py-1 text-xs outline-none focus:bg-purple-50 rounded"
+                  className="w-full px-2 py-1 text-xs text-gray-900 outline-none focus:bg-purple-50 rounded"
                   value={row.label || ''}
                   onChange={e => {
                     const d = [...data];
@@ -256,7 +256,7 @@ export default function ChartDataEditor({ el, onClose }) {
                 <td key={s.key} className="border border-gray-200 p-1">
                   <input
                     type="number"
-                    className="w-full px-2 py-1 text-xs outline-none focus:bg-purple-50 rounded"
+                    className="w-full px-2 py-1 text-xs text-gray-900 outline-none focus:bg-purple-50 rounded"
                     value={row[s.key] ?? 0}
                     onChange={e => {
                       const d = [...data];
@@ -294,7 +294,7 @@ function DataEditorShell({ title, onClose, onSave, children }) {
   return (
     <div className="fixed inset-0 z-[9990] flex items-end justify-center"
       onClick={onClose}>
-      <div className="bg-white rounded-t-2xl shadow-2xl w-full max-w-2xl max-h-[70vh] flex flex-col"
+      <div className="bg-white rounded-t-2xl shadow-2xl w-full max-w-2xl max-h-[70vh] flex flex-col text-gray-900"
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
           <h3 className="font-semibold text-gray-800 text-sm">{title}</h3>

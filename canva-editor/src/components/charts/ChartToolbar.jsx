@@ -123,14 +123,20 @@ export function ChartToolbar({ el }) {
 
       {/* Color scheme */}
       <div className="flex gap-1 flex-shrink-0">
-        {Object.entries(CHART_COLOR_SCHEMES).map(([name, colors]) => (
+        {Object.entries(CHART_COLOR_SCHEMES).map(([name, schemeColors]) => (
           <button
             key={name}
             title={name}
-            onClick={() => update({ colorScheme: name })}
+            onClick={() => {
+              const updatedSeries = (el.series || []).map((s, i) => ({
+                ...s,
+                color: schemeColors[i % schemeColors.length],
+              }));
+              update({ colorScheme: name, series: updatedSeries });
+            }}
             className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all
               ${el.colorScheme === name ? 'border-gray-800 scale-110' : 'border-transparent'}`}
-            style={{ background: `linear-gradient(135deg, ${colors[0]}, ${colors[2]})` }}
+            style={{ background: `linear-gradient(135deg, ${schemeColors[0]}, ${schemeColors[2]})` }}
           />
         ))}
       </div>

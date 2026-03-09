@@ -8,7 +8,6 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   LabelList, ZAxis,
 } from 'recharts';
-import useEditorStore from '../../store/useEditorStore';
 import { CHART_COLOR_SCHEMES } from '../../utils/defaults';
 
 // Progress ring using SVG (not recharts)
@@ -75,7 +74,7 @@ export function renderChart(el) {
     margin: { top: 20, right: 20, bottom: 20, left: 20 },
   };
   const gridProps = el.showGrid
-    ? <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+    ? <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
     : null;
   const tooltipEl = el.showTooltip !== false
     ? <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
@@ -380,20 +379,6 @@ export function renderChart(el) {
 }
 
 const ChartElement = React.memo(function ChartElement({ el, zoom }) {
-  const setSelectedIds = useEditorStore(s => s.setSelectedIds);
-  const toggleSelectedId = useEditorStore(s => s.toggleSelectedId);
-  const isSelected = useEditorStore(s => s.selectedId === el.id ||
-    s.selectedIds.includes(el.id));
-
-  const handleClick = (e) => {
-    e.stopPropagation();
-    if (e.shiftKey) {
-      toggleSelectedId(el.id);
-    } else {
-      setSelectedIds([el.id]);
-    }
-  };
-
   const style = {
     position: 'absolute',
     left: el.x * zoom,
@@ -403,12 +388,12 @@ const ChartElement = React.memo(function ChartElement({ el, zoom }) {
     transform: `rotate(${el.rotation || 0}deg)`,
     opacity: el.opacity ?? 1,
     transformOrigin: 'top left',
-    pointerEvents: isSelected ? 'none' : 'auto',
+    pointerEvents: 'none',
     overflow: 'hidden',
   };
 
   return (
-    <div style={style} onClick={handleClick}>
+    <div style={style}>
       <div style={{
         transform: `scale(${zoom})`,
         transformOrigin: 'top left',

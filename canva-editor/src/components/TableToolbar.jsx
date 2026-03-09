@@ -107,7 +107,7 @@ export default function TableToolbar({ el }) {
   };
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className="h-12 bg-white border-b border-gray-200 flex items-center gap-1 px-4 overflow-x-auto text-gray-900">
       <div className="flex items-center gap-1 text-sm text-gray-600">
         <Grid3X3 className="w-4 h-4" />
         <span>Table</span>
@@ -155,7 +155,7 @@ export default function TableToolbar({ el }) {
       <select
         value={el.style || "clean"}
         onChange={(e) => setStyle(e.target.value)}
-        className="text-xs border border-gray-200 rounded px-2 py-1"
+        className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 bg-white"
       >
         {STYLES.map((s) => (
           <option key={s.id} value={s.id}>

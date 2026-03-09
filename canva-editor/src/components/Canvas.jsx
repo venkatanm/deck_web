@@ -31,6 +31,7 @@ import TableElement from "./TableElement";
 import GraphicElement from "./GraphicElement";
 import StatBlockElement from "./StatBlockElement";
 import TimelineElement from "./TimelineElement";
+import { applyBullets, stripBullets } from "./TextToolbar";
 
 function getSvgPathFromStroke(points, closed = true) {
   const len = points.length;
@@ -657,38 +658,45 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
     const showBgRect = el.textEffect === "background";
 
     const handleDblClick = () => {
-      const node = textRef.current;
+      const node = shapeRef.current;
       if (!node || !stageContainerRef?.current) return;
       const stage = node.getStage();
       const stageBox = stage.container().getBoundingClientRect();
       const absPos = node.getAbsolutePosition();
+      const zoom = useEditorStore.getState().zoom;
 
       const textarea = document.createElement("textarea");
       document.body.appendChild(textarea);
 
+      // Show raw text (no bullet prefixes) in edit textarea
       textarea.value = el.text || "";
       textarea.style.position = "fixed";
       textarea.style.top = stageBox.top + absPos.y + "px";
       textarea.style.left = stageBox.left + absPos.x + "px";
-      textarea.style.width = (el.width || 300) + "px";
-      textarea.style.minHeight = "40px";
-      textarea.style.fontSize = (el.fontSize || 24) + "px";
+      textarea.style.width = ((el.width || 300) * zoom) + "px";
+      const nodeH = node.height();
+      textarea.style.height = (nodeH > 0 ? nodeH * zoom : 20) + "px";
+      textarea.style.minHeight = "20px";
+      textarea.style.fontSize = ((el.fontSize || 24) * zoom) + "px";
       textarea.style.fontFamily = el.fontFamily || "Inter";
-      textarea.style.fontWeight = el.fontStyle === "bold" ? "bold" : "normal";
-      textarea.style.fontStyle = el.fontStyle === "italic" ? "italic" : "normal";
+      textarea.style.fontWeight = (el.fontStyle || "").includes("bold") ? "bold" : "normal";
+      textarea.style.fontStyle = (el.fontStyle || "").includes("italic") ? "italic" : "normal";
       textarea.style.color = el.fill || "#1e293b";
       textarea.style.border = "2px solid #7c3aed";
       textarea.style.borderRadius = "2px";
       textarea.style.padding = "0px";
       textarea.style.margin = "0px";
       textarea.style.overflow = "hidden";
-      textarea.style.background = "white";
+      textarea.style.background = "transparent";
       textarea.style.outline = "none";
       textarea.style.resize = "none";
-      textarea.style.lineHeight = "1.2";
+      textarea.style.lineHeight = String(el.lineHeight ?? 1.2);
+      textarea.style.textAlign = el.align || "left";
+      textarea.style.letterSpacing = ((el.letterSpacing || 0) * zoom) + "px";
       textarea.style.transformOrigin = "top left";
       textarea.style.transform = `rotate(${el.rotation || 0}deg)`;
-      textarea.style.zIndex = "1000";
+      textarea.style.zIndex = "10000";
+      textarea.style.caretColor = el.fill || "#7c3aed";
 
       node.hide();
       setEditing(true);
@@ -696,10 +704,13 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
       textarea.focus();
       textarea.select();
 
+      let finished = false;
       const finish = () => {
+        if (finished) return;
+        finished = true;
         const newText = textarea.value;
         updateElement(el.id, { text: newText });
-        if (textarea.parentNode) document.body.removeChild(textarea);
+        if (textarea.parentNode) textarea.parentNode.removeChild(textarea);
         node.show();
         setEditing(false);
         useEditorStore.getState().commitTextSnapshot();
@@ -711,17 +722,34 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
         }, 50);
       };
 
+      const cancel = () => {
+        if (finished) return;
+        finished = true;
+        if (textarea.parentNode) textarea.parentNode.removeChild(textarea);
+        node.show();
+        setEditing(false);
+        useEditorStore.getState().setTextEditing(false);
+      };
+
       textarea.addEventListener("blur", finish);
       textarea.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
-          if (textarea.parentNode) document.body.removeChild(textarea);
-          node.show();
-          setEditing(false);
-          useEditorStore.getState().setTextEditing(false);
-        }
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          finish();
+          cancel();
+        } else if (e.key === "Enter" && !e.shiftKey) {
+          if (el.listType) {
+            // In list mode: Enter inserts a new line (multi-line editing)
+            e.preventDefault();
+            const pos = textarea.selectionStart;
+            const val = textarea.value;
+            textarea.value = val.slice(0, pos) + "\n" + val.slice(pos);
+            textarea.selectionStart = textarea.selectionEnd = pos + 1;
+            // Auto-grow height
+            textarea.style.height = "auto";
+            textarea.style.height = textarea.scrollHeight + "px";
+          } else {
+            e.preventDefault();
+            finish();
+          }
         }
         e.stopPropagation();
       });
@@ -742,11 +770,10 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
           />
         )}
         <KonvaText
-          ref={textRef}
           x={el.x}
           y={el.y}
           width={el.width}
-          text={applyTextCase(el.text || "Double-click to edit", el.textCase)}
+          text={applyTextCase(applyBullets(el.text || "Double-click to edit", el.listType, el.listIndent), el.textCase)}
           fontSize={el.fontSize || 24}
           fontFamily={el.fontFamily || "Inter"}
           fontStyle={el.fontStyle || "normal"}
@@ -971,6 +998,76 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
             e.cancelBubble = true;
             setSelectedIds([el.id]);
           }}
+          onDblClick={(e) => {
+            e.cancelBubble = true;
+            const node = shapeRef.current;
+            if (!node || !stageContainerRef?.current) return;
+            const stage = node.getStage();
+            const stageBox = stage.container().getBoundingClientRect();
+            const absPos = node.getAbsolutePosition();
+            const zoom = useEditorStore.getState().zoom;
+            const tailH = el.height * 0.28;
+            const pad = 12 * zoom;
+            const textarea = document.createElement("textarea");
+            document.body.appendChild(textarea);
+            textarea.value = el.text || "";
+            textarea.style.position = "fixed";
+            textarea.style.top = (stageBox.top + absPos.y + pad) + "px";
+            textarea.style.left = (stageBox.left + absPos.x + pad) + "px";
+            textarea.style.width = ((el.width - 24) * zoom) + "px";
+            textarea.style.height = ((el.height - 24 - tailH) * zoom) + "px";
+            textarea.style.fontSize = ((el.fontSize || 14) * zoom) + "px";
+            textarea.style.fontFamily = el.fontFamily || "Inter";
+            textarea.style.color = el.textColor || "#ffffff";
+            textarea.style.border = "2px solid rgba(255,255,255,0.7)";
+            textarea.style.borderRadius = "4px";
+            textarea.style.padding = "4px 6px";
+            textarea.style.margin = "0px";
+            textarea.style.overflow = "hidden";
+            textarea.style.background = "rgba(0,0,0,0.25)";
+            textarea.style.outline = "none";
+            textarea.style.resize = "none";
+            textarea.style.textAlign = "center";
+            textarea.style.lineHeight = "1.3";
+            textarea.style.zIndex = "10000";
+            textarea.style.caretColor = el.textColor || "#ffffff";
+            textarea.style.transform = `rotate(${el.rotation || 0}deg)`;
+            textarea.style.transformOrigin = "top left";
+            // Hide the KonvaText so it doesn't show through
+            const konvaTextNode = node.findOne("Text");
+            if (konvaTextNode) konvaTextNode.hide();
+            node.getLayer()?.batchDraw();
+            setEditing(true);
+            useEditorStore.getState().setTextEditing(true);
+            textarea.focus();
+            textarea.select();
+            let finished = false;
+            const finish = () => {
+              if (finished) return;
+              finished = true;
+              updateElement(el.id, { text: textarea.value });
+              if (textarea.parentNode) textarea.parentNode.removeChild(textarea);
+              if (konvaTextNode) konvaTextNode.show();
+              node.getLayer()?.batchDraw();
+              setEditing(false);
+              useEditorStore.getState().commitTextSnapshot();
+            };
+            const cancel = () => {
+              if (finished) return;
+              finished = true;
+              if (textarea.parentNode) textarea.parentNode.removeChild(textarea);
+              if (konvaTextNode) konvaTextNode.show();
+              node.getLayer()?.batchDraw();
+              setEditing(false);
+              useEditorStore.getState().setTextEditing(false);
+            };
+            textarea.addEventListener("blur", finish);
+            textarea.addEventListener("keydown", (ev) => {
+              if (ev.key === "Escape") cancel();
+              else if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); finish(); }
+              ev.stopPropagation();
+            });
+          }}
           onDragEnd={(e) => {
             updateElement(el.id, { x: e.target.x(), y: e.target.y() });
           }}
@@ -1139,6 +1236,65 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
       setSelectedIds([el.id]);
     };
 
+    const handleFlowchartDblClick = () => {
+      const node = shapeRef.current;
+      if (!node || !stageContainerRef?.current) return;
+      const stage = node.getStage();
+      const stageBox = stage.container().getBoundingClientRect();
+      const zoom = useEditorStore.getState().zoom;
+      const textarea = document.createElement("textarea");
+      document.body.appendChild(textarea);
+      textarea.value = el.text || "";
+      textarea.style.position = "fixed";
+      textarea.style.top = stageBox.top + el.y * zoom + "px";
+      textarea.style.left = stageBox.left + el.x * zoom + "px";
+      textarea.style.width = el.width * zoom + "px";
+      textarea.style.height = el.height * zoom + "px";
+      textarea.style.fontSize = (el.fontSize || 13) * zoom + "px";
+      textarea.style.fontFamily = el.fontFamily || "Inter";
+      textarea.style.color = el.textColor || "#1e293b";
+      textarea.style.border = "2px solid #7c3aed";
+      textarea.style.borderRadius = "4px";
+      textarea.style.padding = "4px";
+      textarea.style.margin = "0px";
+      textarea.style.overflow = "hidden";
+      textarea.style.background = "rgba(255,255,255,0.95)";
+      textarea.style.outline = "none";
+      textarea.style.resize = "none";
+      textarea.style.textAlign = "center";
+      textarea.style.zIndex = "1000";
+      setEditing(true);
+      useEditorStore.getState().setTextEditing(true);
+      textarea.focus();
+      textarea.select();
+      let fcFinished = false;
+      const finish = () => {
+        if (fcFinished) return;
+        fcFinished = true;
+        updateElement(el.id, { text: textarea.value });
+        if (textarea.parentNode) textarea.parentNode.removeChild(textarea);
+        setEditing(false);
+        useEditorStore.getState().commitTextSnapshot();
+      };
+      const cancel = () => {
+        if (fcFinished) return;
+        fcFinished = true;
+        if (textarea.parentNode) textarea.parentNode.removeChild(textarea);
+        setEditing(false);
+        useEditorStore.getState().setTextEditing(false);
+      };
+      textarea.addEventListener("blur", finish);
+      textarea.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          cancel();
+        } else if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          finish();
+        }
+        e.stopPropagation();
+      });
+    };
+
     return (
       <>
         <ShapeEl
@@ -1154,6 +1310,8 @@ const ElementNode = React.memo(function ElementNode({ el, isSelected, selectedId
           rotation={el.rotation || 0}
           draggable={!el.locked}
           onClick={handleFlowchartClick}
+          onDblClick={handleFlowchartDblClick}
+          onDblTap={handleFlowchartDblClick}
           onDragEnd={(e) => {
             updateElement(el.id, { x: e.target.x(), y: e.target.y() });
           }}
@@ -2071,7 +2229,7 @@ export function Canvas({ onContextMenu }) {
   return (
     <div
       ref={stageContainerRef}
-      className={`flex-1 overflow-auto bg-gray-100 flex items-start justify-center relative ${showRulers ? "pt-5 pl-5" : "p-10"}`}
+      className={`flex-1 overflow-auto bg-gray-100 flex items-start justify-center relative p-10`}
       onContextMenu={(e) => e.preventDefault()}
       onWheel={(e) => {
         if (e.ctrlKey || e.metaKey) {
@@ -2227,10 +2385,10 @@ export function Canvas({ onContextMenu }) {
           setMarquee(null);
         }}
         onClick={(e) => {
-          if (e.target === e.target.getStage()) clearSelection();
+          if (e.target === e.target.getStage() || e.target.name() === "background") clearSelection();
         }}
         onTap={(e) => {
-          if (e.target === e.target.getStage()) clearSelection();
+          if (e.target === e.target.getStage() || e.target.name() === "background") clearSelection();
         }}
         onContextMenu={(e) => {
           e.evt.preventDefault();

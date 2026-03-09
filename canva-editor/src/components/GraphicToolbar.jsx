@@ -6,7 +6,7 @@ export default function GraphicToolbar({ el }) {
   const deleteElement = useEditorStore((s) => s.deleteElement);
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className="h-12 bg-white border-b border-gray-200 flex items-center gap-1 px-4 overflow-x-auto text-gray-900">
       <span className="text-sm text-gray-600">{el.iconName || "Icon"}</span>
       <div className="w-px h-6 bg-gray-200 mx-1" />
       <div className="flex items-center gap-1">
@@ -23,7 +23,7 @@ export default function GraphicToolbar({ el }) {
         <select
           value={el.strokeWidth ?? 1.5}
           onChange={(e) => updateElement(el.id, { strokeWidth: parseFloat(e.target.value) })}
-          className="text-xs border border-gray-200 rounded px-2 py-1 w-16"
+          className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-16 bg-white"
         >
           <option value={1}>1</option>
           <option value={1.5}>1.5</option>
@@ -39,7 +39,7 @@ export default function GraphicToolbar({ el }) {
           type="number"
           value={Math.round(el.width)}
           onChange={(e) => updateElement(el.id, { width: Math.max(20, Number(e.target.value)) })}
-          className="w-14 text-xs border border-gray-200 rounded px-2 py-1"
+          className="w-14 text-xs text-gray-900 border border-gray-200 rounded px-2 py-1"
         />
       </div>
       <div className="flex items-center gap-1">
@@ -48,7 +48,7 @@ export default function GraphicToolbar({ el }) {
           type="number"
           value={Math.round(el.height)}
           onChange={(e) => updateElement(el.id, { height: Math.max(20, Number(e.target.value)) })}
-          className="w-14 text-xs border border-gray-200 rounded px-2 py-1"
+          className="w-14 text-xs text-gray-900 border border-gray-200 rounded px-2 py-1"
         />
       </div>
       <div className="flex items-center gap-1">

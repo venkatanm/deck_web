@@ -151,7 +151,7 @@ export default function App() {
   return (
     <>
       {!appReady && <LoadingScreen onReady={() => setAppReady(true)} />}
-      <div className={`h-screen w-screen flex flex-col overflow-hidden transition-opacity duration-300 ${appReady ? "opacity-100" : "opacity-0"}`}>
+      <div className={`h-screen w-screen flex flex-col overflow-hidden transition-opacity duration-300 text-gray-900 ${appReady ? "opacity-100" : "opacity-0"}`}>
       <TopBar
         onShare={() => setShowShare(true)}
         onDownload={() => setShowDownload(true)}

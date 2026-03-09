@@ -62,7 +62,7 @@ export function ContextMenu({ x, y, elementId, onClose }) {
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white rounded-lg shadow-2xl border border-gray-200 min-w-[200px] py-1 z-[9999]"
+      className="fixed bg-white rounded-lg shadow-2xl border border-gray-200 min-w-[200px] py-1 z-[9999] text-gray-800"
       style={{ left: x, top: y }}
       onClick={(e) => e.stopPropagation()}
     >

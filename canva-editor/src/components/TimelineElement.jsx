@@ -83,18 +83,35 @@ function HorizontalTimeline({ el }) {
                 {item.label}
               </div>
 
-              <div
-                style={{
-                  width: isActive ? 20 : 14,
-                  height: isActive ? 20 : 14,
+              {(el.style || "dots") === "arrows" ? (
+                <div style={{ color: isDone || isActive ? accent : el.lineColor || "#e2e8f0", fontSize: isActive ? 22 : 18, lineHeight: 1, flexShrink: 0 }}>
+                  ➤
+                </div>
+              ) : (el.style || "dots") === "numbered" ? (
+                <div style={{
+                  width: isActive ? 26 : 20, height: isActive ? 26 : 20,
                   borderRadius: "50%",
-                  background: dotColor,
-                  border: `3px solid ${isDone || isActive ? accent : el.lineColor || "#e2e8f0"}`,
+                  background: isDone || isActive ? accent : el.lineColor || "#e2e8f0",
+                  color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: isActive ? 12 : 10, fontWeight: 700, flexShrink: 0,
                   boxShadow: isActive ? `0 0 0 4px ${accent}33` : "none",
-                  flexShrink: 0,
-                  transition: "all 0.2s",
-                }}
-              />
+                }}>
+                  {i + 1}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    width: isActive ? 20 : 14,
+                    height: isActive ? 20 : 14,
+                    borderRadius: "50%",
+                    background: dotColor,
+                    border: `3px solid ${isDone || isActive ? accent : el.lineColor || "#e2e8f0"}`,
+                    boxShadow: isActive ? `0 0 0 4px ${accent}33` : "none",
+                    flexShrink: 0,
+                    transition: "all 0.2s",
+                  }}
+                />
+              )}
 
               <div
                 style={{
@@ -334,7 +351,7 @@ const TimelineElement = React.memo(function TimelineElement({ el, zoom }) {
         opacity: el.opacity ?? 1,
         transform: `rotate(${el.rotation || 0}deg)`,
         transformOrigin: "top left",
-        pointerEvents: "none",
+        pointerEvents: isSelected ? "auto" : "none",
         zIndex: isSelected ? 5 : 2,
       }}
     >

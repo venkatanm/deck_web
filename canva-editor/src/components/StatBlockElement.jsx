@@ -452,7 +452,7 @@ const StatBlockElement = React.memo(function StatBlockElement({ el, zoom }) {
         opacity: el.opacity ?? 1,
         transform: `rotate(${el.rotation || 0}deg)`,
         transformOrigin: "top left",
-        pointerEvents: "none",
+        pointerEvents: isSelected ? "auto" : "none",
         zIndex: isSelected ? 5 : 2,
       }}
     >
