@@ -1,0 +1,22 @@
+﻿{
+    "HeartbeatInterval":  30,
+    "StartTimeout":  60,
+    "StartupType":  2,
+    "StderrPath":  "C:\\ProgramData\\Servy\\velox-decks\\velox-stack.err",
+    "EnableRotation":  true,
+    "Description":  "Velox Decks - Canva clone stack (Postgres, MinIO, backend, Nginx)",
+    "Parameters":  "compose -f deploy\\docker-compose.prod.yml up",
+    "MaxRotations":  5,
+    "StdoutPath":  "C:\\ProgramData\\Servy\\velox-decks\\velox-stack.log",
+    "StartupDirectory":  "C:\\Users\\UserAdmin\\deck_web",
+    "StopTimeout":  30,
+    "ExecutablePath":  "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe",
+    "MaxFailedChecks":  3,
+    "EnableHealthMonitoring":  true,
+    "Priority":  2,
+    "Name":  "velox-decks",
+    "MaxRestartAttempts":  5,
+    "RecoveryAction":  1,
+    "RunAsLocalSystem":  true,
+    "RotationSize":  10485760
+}

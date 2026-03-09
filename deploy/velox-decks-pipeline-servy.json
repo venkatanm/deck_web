@@ -1,0 +1,22 @@
+{
+  "Name": "velox-decks-pipeline",
+  "Description": "Velox Decks - Doc-to-Deck pipeline (port 8001)",
+  "ExecutablePath": "C:\\Users\\UserAdmin\\deck_creation\\.venv\\Scripts\\python.exe",
+  "StartupDirectory": "C:\\Users\\UserAdmin\\deck_creation",
+  "Parameters": "-m doc_to_deck_service",
+  "StartupType": 2,
+  "Priority": 2,
+  "StdoutPath": "C:\\ProgramData\\Servy\\velox-decks-pipeline\\pipeline.log",
+  "StderrPath": "C:\\ProgramData\\Servy\\velox-decks-pipeline\\pipeline.err",
+  "StartTimeout": 30,
+  "StopTimeout": 15,
+  "EnableRotation": true,
+  "RotationSize": 10485760,
+  "MaxRotations": 5,
+  "EnableHealthMonitoring": true,
+  "HeartbeatInterval": 60,
+  "MaxFailedChecks": 5,
+  "RecoveryAction": 1,
+  "MaxRestartAttempts": 5,
+  "RunAsLocalSystem": true
+}

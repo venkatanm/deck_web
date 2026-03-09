@@ -281,7 +281,7 @@ async def feedback_stats(
         "brand_kit_save":  await avg_rating("brand_kit_save"),
     }
 
-    # Daily volume (14 days)
+    # Daily volume (14 days). Use index access (r[0], r[1]) to avoid Row.count shadowing SQL count.
     daily = await rows(
         """
         SELECT date_trunc('day', created_at AT TIME ZONE 'UTC')::date AS date, COUNT(*) AS count
@@ -298,7 +298,7 @@ async def feedback_stats(
         "by_type":      {"survey": survey_cnt, "button": button_cnt},
         "nps_score":    nps_score,
         "avg_rating":   avg_ratings,
-        "daily_volume": [{"date": str(r.date), "count": r.count} for r in daily],
+        "daily_volume": [{"date": str(r[0]), "count": int(r[1])} for r in daily],
     }
 
 

@@ -14,11 +14,27 @@ import {
 import useEditorStore from "../store/useEditorStore";
 import useFeedback from "../store/useFeedback";
 import { buildSlideElements, applyBrandKitToPages } from "../utils/importContentSchema";
+import { formatPipelineError } from "../utils/pipelineErrors";
 import { LAYOUT_DEFINITIONS } from "../data/layoutDefinitions";
 import { v4 as uuidv4 } from "uuid";
 
 const PERSONAS = ["Executive", "VC", "TPM", "PMM", "Consultant", "Engineer"];
 const DENSITIES = ["outline", "standard", "detailed"];
+
+/* Light theme for AI panel to match editor sidebar (white / gray) */
+const LIGHT = {
+  bg: "#ffffff",
+  bgCard: "#f9fafb",
+  border: "#e5e7eb",
+  textHi: "#111827",
+  textMid: "#6b7280",
+  textLo: "#9ca3af",
+  accent: "#0891b2",
+  accentDim: "rgba(8, 145, 178, 0.12)",
+  accentBorder: "rgba(8, 145, 178, 0.3)",
+  accentOnWhite: "#0e7490",
+  btnText: "#ffffff",
+};
 
 const CONTENT_SOFT_LIMIT = 10_000;  // chars — show trimming notice above this
 const CONTENT_HARD_WARN  = 50_000;  // chars — warn before sending
@@ -133,7 +149,7 @@ function MessageBubble({ msg, onRetry }) {
   if (msg.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] text-sm rounded-2xl rounded-tr-sm px-4 py-2.5 leading-relaxed" style={{ background: "var(--cyan-dim)", color: "var(--text-hi)", border: "1px solid rgba(45,212,240,0.2)" }}>
+        <div className="max-w-[85%] text-sm rounded-2xl rounded-tr-sm px-4 py-2.5 leading-relaxed" style={{ background: LIGHT.accentDim, color: LIGHT.textHi, border: `1px solid ${LIGHT.accentBorder}` }}>
           {msg.text}
         </div>
       </div>
@@ -143,13 +159,13 @@ function MessageBubble({ msg, onRetry }) {
   if (msg.role === "error") {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[85%] text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 leading-relaxed" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#fca5a5" }}>
+        <div className="max-w-[85%] text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 leading-relaxed" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#dc2626" }}>
           <p>{msg.text}</p>
           {onRetry && (
             <button
               onClick={onRetry}
               className="mt-2 flex items-center gap-1 text-xs font-semibold transition-colors"
-              style={{ color: "#f87171" }}
+              style={{ color: "#dc2626" }}
             >
               <RefreshCw size={11} /> Retry
             </button>
@@ -162,19 +178,19 @@ function MessageBubble({ msg, onRetry }) {
   // assistant
   return (
     <div className="flex justify-start">
-      <div className="max-w-[85%] text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 leading-relaxed" style={{ background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text-mid)" }}>
+      <div className="max-w-[85%] text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 leading-relaxed" style={{ background: LIGHT.bgCard, border: `1px solid ${LIGHT.border}`, color: LIGHT.textMid }}>
         {msg.slideCount > 0 && (
-          <div className="flex items-center gap-1.5 mb-1.5 text-xs font-semibold" style={{ color: "var(--cyan)" }}>
+          <div className="flex items-center gap-1.5 mb-1.5 text-xs font-semibold" style={{ color: LIGHT.accent }}>
             <Wand2 size={11} />
             AI generated {msg.slideCount} slide{msg.slideCount !== 1 ? "s" : ""}
           </div>
         )}
-        <p className="text-xs" style={{ color: "var(--text-mid)" }}>{msg.text}</p>
+        <p className="text-xs" style={{ color: LIGHT.textMid }}>{msg.text}</p>
         {msg.slideNames?.length > 0 && (
           <ul className="mt-1.5 space-y-0.5">
             {msg.slideNames.map((name, i) => (
-              <li key={i} className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-hi)" }}>
-                <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0" style={{ background: "var(--cyan-dim)", color: "var(--cyan)" }}>
+              <li key={i} className="flex items-center gap-1.5 text-xs" style={{ color: LIGHT.textHi }}>
+                <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0" style={{ background: LIGHT.accentDim, color: LIGHT.accent }}>
                   {i + 1}
                 </span>
                 {name}
@@ -282,7 +298,6 @@ export default function AIChatPanel({ onClose }) {
     setContentError("");
     setWarnings([]);
     setLastFailedBody(null);
-    setMessages((prev) => [...prev, { role: "user", text: userMsgText }]);
     setLoading(true);
 
     try {
@@ -300,8 +315,6 @@ export default function AIChatPanel({ onClose }) {
           const { msg, field } = map400Detail(detail);
           if (field === "content") setContentError(msg);
           else setInstructionError(msg);
-          // Remove the user bubble we just added so they can fix and retry
-          setMessages((prev) => prev.slice(0, -1));
           return;
         }
 
@@ -314,7 +327,8 @@ export default function AIChatPanel({ onClose }) {
         // 500+
         console.error("Pipeline error:", err);
         setLastFailedBody(body);
-        setMessages((prev) => [...prev, { role: "error", text: "Slide generation failed. Please try again in a moment.", canRetry: true }]);
+        const friendlyText = formatPipelineError(detail);
+        setMessages((prev) => [...prev, { role: "error", text: friendlyText, canRetry: true }]);
         return;
       }
 
@@ -427,7 +441,6 @@ export default function AIChatPanel({ onClose }) {
     // 1. Local intent short-circuit — no API call needed
     const localIntent = classifyLocalIntent(trimmed);
     if (localIntent) {
-      setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
       setInstruction("");
       const result = executeLocalIntent(localIntent.type, localIntent);
       setMessages((prev) => [...prev, { role: "assistant", text: result, slideCount: 0 }]);
@@ -500,27 +513,27 @@ export default function AIChatPanel({ onClose }) {
   };
 
   return (
-    <div className="fixed right-0 top-14 bottom-[140px] w-[360px] z-[9990] flex flex-col" style={{ background: "var(--bg-deep)", borderLeft: "1px solid var(--border)" }}>
+    <div className="ai-panel-light fixed right-0 top-14 bottom-[140px] w-[360px] z-[9990] flex flex-col" style={{ background: LIGHT.bg, borderLeft: `1px solid ${LIGHT.border}` }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
+      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${LIGHT.border}` }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "var(--cyan-dim)", border: "1px solid rgba(45,212,240,0.25)" }}>
-            <Wand2 size={14} style={{ color: "var(--cyan)" }} />
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: LIGHT.accentDim, border: `1px solid ${LIGHT.accentBorder}` }}>
+            <Wand2 size={14} style={{ color: LIGHT.accent }} />
           </div>
           <div>
-            <p className="text-sm font-bold leading-tight" style={{ color: "var(--text-hi)" }}>AI Slide Assistant</p>
+            <p className="text-sm font-bold leading-tight" style={{ color: LIGHT.textHi }}>AI Slide Assistant</p>
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--cyan)", boxShadow: "0 0 4px #2DD4F0" }} />
-              <p className="text-[10px]" style={{ color: "var(--text-lo)" }}>Curates your content into slides</p>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: LIGHT.accent, boxShadow: `0 0 4px ${LIGHT.accent}` }} />
+              <p className="text-[10px]" style={{ color: LIGHT.textLo }}>Curates your content into slides</p>
             </div>
           </div>
         </div>
         <button
           onClick={onClose}
           className="p-1.5 rounded-lg transition-colors"
-          style={{ color: "var(--text-lo)" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--card2)"; e.currentTarget.style.color = "var(--text-hi)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "var(--text-lo)"; }}
+          style={{ color: LIGHT.textLo }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = LIGHT.bgCard; e.currentTarget.style.color = LIGHT.textHi; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = LIGHT.textLo; }}
         >
           <X size={16} />
         </button>
@@ -528,20 +541,20 @@ export default function AIChatPanel({ onClose }) {
 
       {/* Mode toggle */}
       <div className="px-4 pt-3 pb-2 flex-shrink-0">
-        <div className="flex rounded-xl overflow-hidden text-xs font-semibold" style={{ border: "1px solid var(--border)" }}>
+        <div className="flex rounded-xl overflow-hidden text-xs font-semibold" style={{ border: `1px solid ${LIGHT.border}` }}>
           {[["fast", Zap, "Quick"], ["detailed", BarChart2, "Detailed"]].map(([m, Icon, label]) => (
             <button
               key={m}
               onClick={() => setMode(m)}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors"
-              style={mode === m ? { background: "var(--cyan)", color: "var(--text-inv)", fontWeight: 700 } : { color: "var(--text-lo)", background: "transparent" }}
+              style={mode === m ? { background: LIGHT.accent, color: LIGHT.btnText, fontWeight: 700 } : { color: LIGHT.textLo, background: "transparent" }}
             >
               <Icon size={12} />
               {label}
             </button>
           ))}
         </div>
-        <p className="text-[10px] mt-1.5 text-center" style={{ color: "var(--text-lo)" }}>
+        <p className="text-[10px] mt-1.5 text-center" style={{ color: LIGHT.textLo }}>
           {mode === "fast" ? "Single LLM call — fast results" : "Full pipeline — richer layouts & voice"}
         </p>
       </div>
@@ -551,7 +564,7 @@ export default function AIChatPanel({ onClose }) {
         <button
           onClick={() => setShowAdvanced((v) => !v)}
           className="flex items-center gap-1 text-[11px] transition-colors"
-          style={{ color: "var(--text-lo)" }}
+          style={{ color: LIGHT.textLo }}
         >
           {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           Advanced options
@@ -560,13 +573,13 @@ export default function AIChatPanel({ onClose }) {
           <div className="mt-2 flex gap-2">
             {[["Persona", persona, setPersona, PERSONAS, false], ["Density", density, setDensity, DENSITIES, mode === "fast"]].map(([lbl, val, setter, opts, dis]) => (
               <div key={lbl} className="flex-1">
-                <label className="block text-[10px] mb-1 font-medium" style={{ color: "var(--text-lo)" }}>{lbl}</label>
+                <label className="block text-[10px] mb-1 font-medium" style={{ color: LIGHT.textLo }}>{lbl}</label>
                 <select
                   value={val}
                   onChange={(e) => setter(e.target.value)}
                   disabled={dis}
                   className="w-full text-xs rounded-lg px-2 py-1.5 focus:outline-none disabled:opacity-50"
-                  style={{ border: "1px solid var(--border)", background: "var(--card2)", color: "var(--text-hi)" }}
+                  style={{ border: `1px solid ${LIGHT.border}`, background: LIGHT.bgCard, color: LIGHT.textHi }}
                 >
                   {opts.map((o) => <option key={o}>{o}</option>)}
                 </select>
@@ -580,10 +593,10 @@ export default function AIChatPanel({ onClose }) {
       {warnings.length > 0 && (
         <div className="px-4 pt-2 flex-shrink-0 space-y-1">
           {warnings.map((w, i) => (
-            <div key={i} className="flex items-start gap-2 rounded-lg px-3 py-2 text-xs" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", color: "#fcd34d" }}>
-              <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" style={{ color: "#f59e0b" }} />
+            <div key={i} className="flex items-start gap-2 rounded-lg px-3 py-2 text-xs" style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.35)", color: "#b45309" }}>
+              <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" style={{ color: "#d97706" }} />
               <span className="flex-1">{w}</span>
-              <button onClick={() => setWarnings((prev) => prev.filter((_, j) => j !== i))} style={{ color: "#f59e0b" }}>
+              <button onClick={() => setWarnings((prev) => prev.filter((_, j) => j !== i))} style={{ color: "#d97706" }}>
                 <X size={11} />
               </button>
             </div>
@@ -598,9 +611,9 @@ export default function AIChatPanel({ onClose }) {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2" style={{ background: "var(--card2)", border: "1px solid var(--border)" }}>
-              <Loader2 size={14} className="animate-spin" style={{ color: "var(--cyan)" }} />
-              <span className="text-xs" style={{ color: "var(--text-mid)" }}>
+            <div className="rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2" style={{ background: LIGHT.bgCard, border: `1px solid ${LIGHT.border}` }}>
+              <Loader2 size={14} className="animate-spin" style={{ color: LIGHT.accent }} />
+              <span className="text-xs" style={{ color: LIGHT.textMid }}>
                 {mode === "fast" ? "Generating slide…" : "Building your slide deck…"}
               </span>
             </div>
@@ -610,31 +623,8 @@ export default function AIChatPanel({ onClose }) {
       </div>
 
       {/* Input area */}
-      <div className="px-4 pt-3 pb-4 flex-shrink-0 space-y-2" style={{ borderTop: "1px solid var(--border)" }}>
-        {/* Optional context */}
-        <div>
-          <textarea
-            value={content}
-            onChange={(e) => { setContent(e.target.value); setContentError(""); }}
-            placeholder="Paste your source text here — reports, notes, docs, data (plain text, max ~8,000 words)"
-            className="w-full text-xs rounded-xl px-3 py-2 focus:outline-none resize-none panel-input"
-            style={contentError ? { borderColor: "rgba(239,68,68,0.6)" } : {}}
-            rows={2}
-          />
-          <div className="flex justify-between items-center mt-0.5 px-0.5">
-            {contentError
-              ? <p className="text-[10px]" style={{ color: "#f87171" }}>{contentError}</p>
-              : content.length >= CONTENT_SOFT_LIMIT
-              ? <p className="text-[10px]" style={{ color: "#fbbf24" }}>Content will be intelligently trimmed to what's most relevant.</p>
-              : <span />
-            }
-            <p className="text-[10px]" style={{ color: content.length >= CONTENT_SOFT_LIMIT ? "#fbbf24" : "var(--text-lo)" }}>
-              {content.length.toLocaleString()} chars
-            </p>
-          </div>
-        </div>
-
-        {/* Instruction + send */}
+      <div className="px-4 pt-3 pb-4 flex-shrink-0 space-y-2" style={{ borderTop: `1px solid ${LIGHT.border}` }}>
+        {/* Instruction + send (user chat box) */}
         <div>
           <div className="flex gap-2 items-end">
             <textarea
@@ -651,14 +641,37 @@ export default function AIChatPanel({ onClose }) {
               onClick={handleSend}
               disabled={!instruction.trim() || loading}
               className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center disabled:opacity-40 transition-opacity"
-              style={{ background: "var(--cyan)", color: "var(--text-inv)" }}
+              style={{ background: LIGHT.accent, color: LIGHT.btnText }}
             >
               <Send size={15} />
             </button>
           </div>
-          {instructionError && <p className="text-[10px] mt-0.5 px-0.5" style={{ color: "#f87171" }}>{instructionError}</p>}
+          {instructionError && <p className="text-[10px] mt-0.5 px-0.5" style={{ color: "#dc2626" }}>{instructionError}</p>}
         </div>
-        <p className="text-[10px] text-center" style={{ color: "var(--text-lo)" }}>Enter to send · Shift+Enter for new line</p>
+        <p className="text-[10px] text-center" style={{ color: LIGHT.textLo }}>Enter to send · Shift+Enter for new line</p>
+
+        {/* Optional context — paste source text below */}
+        <div>
+          <textarea
+            value={content}
+            onChange={(e) => { setContent(e.target.value); setContentError(""); }}
+            placeholder="Paste your source text here — reports, notes, docs, data (plain text, max ~8,000 words)"
+            className="w-full text-xs rounded-xl px-3 py-2 focus:outline-none resize-none panel-input"
+            style={contentError ? { borderColor: "rgba(239,68,68,0.6)" } : {}}
+            rows={2}
+          />
+          <div className="flex justify-between items-center mt-0.5 px-0.5">
+            {contentError
+              ? <p className="text-[10px]" style={{ color: "#dc2626" }}>{contentError}</p>
+              : content.length >= CONTENT_SOFT_LIMIT
+              ? <p className="text-[10px]" style={{ color: "#b45309" }}>Content will be intelligently trimmed to what's most relevant.</p>
+              : <span />
+            }
+            <p className="text-[10px]" style={{ color: content.length >= CONTENT_SOFT_LIMIT ? "#b45309" : LIGHT.textLo }}>
+              {content.length.toLocaleString()} chars
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

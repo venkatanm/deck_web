@@ -1,0 +1,23 @@
+{
+    "RotationSize":  10485760,
+    "StartupDirectory":  "C:\\ProgramData\\cloudflared",
+    "EnableHealthMonitoring":  true,
+    "RunAsLocalSystem":  true,
+    "StartTimeout":  60,
+    "StdoutPath":  "C:\\ProgramData\\Servy\\velox-cloudflared\\cloudflared.log",
+    "Name":  "velox-cloudflared",
+    "EnableRotation":  true,
+    "Description":  "Cloudflare Tunnel - www.datavelox.com, decks.datavelox.com",
+    "Priority":  2,
+    "MaxRotations":  5,
+    "StopTimeout":  15,
+    "ExecutablePath":  "C:\\Program Files (x86)\\cloudflared\\cloudflared.exe",
+    "StderrPath":  "C:\\ProgramData\\Servy\\velox-cloudflared\\cloudflared.err",
+    "Parameters":  "--config \"C:\\ProgramData\\cloudflared\\config.yml\" tunnel run velox-decks",
+    "StartupType":  2,
+    "HeartbeatInterval":  30,
+    "MaxFailedChecks":  3,
+    "RecoveryAction":  1,
+    "MaxRestartAttempts":  5,
+    "Deps":  "velox-decks"
+}

@@ -53,8 +53,7 @@ export default function MiniMap() {
   return (
     <div
       className="absolute bottom-4 right-4 z-20 shadow-2xl rounded-xl overflow-hidden border"
-      style={{ background: "var(--card2)", borderColor: "var(--border)" }}
-      style={{ width: MINIMAP_WIDTH + 2, userSelect: "none" }}
+      style={{ background: "var(--card2)", borderColor: "var(--border)", width: MINIMAP_WIDTH + 2, userSelect: "none" }}
     >
       <div className="flex items-center justify-between px-2 py-1 border-b" style={{ borderColor: "var(--border)" }}>
         <span className="text-[10px] text-velox-text-mid font-medium">Navigator</span>

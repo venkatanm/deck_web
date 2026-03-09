@@ -1,0 +1,103 @@
+# Velox Decks - Production deployment
+# Resource limits: ~60% of 64GB RAM (~38GB total for all services)
+# W-2155: adjust cpus if your core count differs
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: velox_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: canva
+      POSTGRES_PASSWORD: changeme_strong_password
+      POSTGRES_DB: canva_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U canva -d canva_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '2'
+
+  minio:
+    image: minio/minio:latest
+    container_name: velox_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: changeme_minio_password
+    volumes:
+      - minio_data:/data
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '1'
+
+  backend:
+    build: ../backend
+    container_name: velox_backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')\" || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+    environment:
+      DATABASE_URL: postgresql://canva:changeme_strong_password@postgres:5432/canva_db
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: changeme_minio_password
+      MINIO_BUCKET: canva-images
+      MINIO_SECURE: "false"
+      MINIO_PUBLIC_URL: http://localhost:9000
+      JWT_SECRET: changeme_jwt_secret_min_32_chars
+      JWT_EXPIRE_MINUTES: "10080"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8000:8000"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+
+  nginx:
+    image: nginx:alpine
+    container_name: velox_nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx-prod.conf:/etc/nginx/nginx.conf:ro
+      - ../canva-editor/dist:/usr/share/nginx/html:ro
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+volumes:
+  postgres_data:
+  minio_data:

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { Canvas } from "./components/Canvas";
 import { ContextMenu } from "./components/ContextMenu";
@@ -22,6 +23,7 @@ import MicroSurveyToast from "./components/feedback/MicroSurveyToast";
 import { shallow } from "zustand/shallow";
 
 export default function App() {
+  const location = useLocation();
   const [appReady, setAppReady] = useState(false);
   const [contextMenu, setContextMenu] = useState({
     visible: false,
@@ -51,6 +53,7 @@ export default function App() {
 
   useEffect(() => {
     const loadAutosave = async () => {
+      if (location.state?.skipAutosave) return;
       const { projectId } = useEditorStore.getState();
       if (projectId) return;
       try {
@@ -71,7 +74,7 @@ export default function App() {
       }
     };
     loadAutosave();
-  }, []);
+  }, [location.state?.skipAutosave]);
 
   useEffect(() => {
     if (autosaveRef.current) clearTimeout(autosaveRef.current);

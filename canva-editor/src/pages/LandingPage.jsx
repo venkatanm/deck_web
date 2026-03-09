@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getAppUrl } from '../config/domains'
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
 function VeloxLogo({ size = 28 }) {
@@ -83,13 +84,13 @@ export default function LandingPage() {
             <span style={{ fontFamily: 'inherit', fontSize: 22, fontWeight: 900, letterSpacing: '-0.035em', color: '#fff' }}>Velox</span>
           </Link>
 
-          {/* Desktop CTAs */}
+          {/* Desktop CTAs — link to app domain (decks.datavelox.com) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }} className="landing-nav-ctas">
-            <Link to="/login" style={sBtn.ghost}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--text-hi)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-mid)'}
-            >Sign in</Link>
-            <Link to="/register" style={{ ...sBtn.primary, padding: '9px 18px' }}>Get Access</Link>
+            <a href={`${getAppUrl()}/login`} style={sBtn.ghost}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-hi)' }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-mid)' }}
+            >Sign in</a>
+            <a href={`${getAppUrl()}/register`} style={{ ...sBtn.primary, padding: '9px 18px' }}>Get Access</a>
           </div>
 
           {/* Hamburger */}
@@ -107,8 +108,8 @@ export default function LandingPage() {
         {/* Mobile menu */}
         {mobileOpen && (
           <div style={{ maxWidth: 1160, margin: '8px auto 0', padding: '12px 16px', background: 'rgba(15,21,32,0.98)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <Link to="/login" onClick={() => setMobileOpen(false)} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-lo)', padding: '10px 8px', borderRadius: 8, textDecoration: 'none' }}>Sign in</Link>
-            <Link to="/register" onClick={() => setMobileOpen(false)} style={{ ...sBtn.primary, marginTop: 8, justifyContent: 'center' }}>Get Access</Link>
+            <a href={`${getAppUrl()}/login`} onClick={() => setMobileOpen(false)} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-lo)', padding: '10px 8px', borderRadius: 8, textDecoration: 'none' }}>Sign in</a>
+            <a href={`${getAppUrl()}/register`} onClick={() => setMobileOpen(false)} style={{ ...sBtn.primary, marginTop: 8, justifyContent: 'center' }}>Get Access</a>
           </div>
         )}
       </nav>
@@ -137,9 +138,9 @@ export default function LandingPage() {
         </p>
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', position: 'relative' }}>
-          <Link to="/register" style={{ ...sBtn.primary, padding: '14px 28px', fontSize: 15 }}>
+          <a href={`${getAppUrl()}/register`} style={{ ...sBtn.primary, padding: '14px 28px', fontSize: 15 }}>
             Get Access to Velox Decks
-          </Link>
+          </a>
         </div>
       </section>
 
@@ -148,8 +149,8 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-mid)', flexWrap: 'wrap', gap: 12 }}>
           <span>© {new Date().getFullYear()} Velox Data Inc. All rights reserved.</span>
           <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-            <Link to="/login" style={{ color: 'var(--text-mid)', textDecoration: 'none', transition: 'color 0.15s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--text-hi)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-mid)'}>Sign in</Link>
-            <Link to="/register" style={{ color: 'var(--text-mid)', textDecoration: 'none', transition: 'color 0.15s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--text-hi)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-mid)'}>Get Access</Link>
+            <a href={`${getAppUrl()}/login`} style={{ color: 'var(--text-mid)', textDecoration: 'none', transition: 'color 0.15s' }} onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-hi)' }} onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-mid)' }}>Sign in</a>
+            <a href={`${getAppUrl()}/register`} style={{ color: 'var(--text-mid)', textDecoration: 'none', transition: 'color 0.15s' }} onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-hi)' }} onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-mid)' }}>Get Access</a>
           </div>
         </div>
       </footer>

@@ -1,0 +1,7 @@
+{
+  "Name": "velox-decks",
+  "Description": "Velox Decks - Canva clone stack",
+  "ExecutablePath": "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe",
+  "StartupDirectory": "C:\\Users\\UserAdmin\\deck_web",
+  "Parameters": "compose -f deploy\\docker-compose.prod.yml up"
+}

@@ -421,7 +421,7 @@ export default function HomePage() {
 
   const handleCreateNew = () => {
     newDesign();
-    navigate("/editor");
+    navigate("/editor", { state: { skipAutosave: true } });
   };
 
   const handleOpenProject = async (project) => {

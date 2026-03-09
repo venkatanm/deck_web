@@ -20,6 +20,7 @@ import {
   DOCUMENT_TYPE_TO_TEMPLATE,
 } from "../data/contentSchema";
 import { PRESENTATION_TEMPLATES } from "../data/presentationTemplates";
+import { formatPipelineError } from "../utils/pipelineErrors";
 
 const ACCEPTED_DOC_TYPES = ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt";
 
@@ -109,7 +110,8 @@ export default function ImportFromAIModal({ onClose }) {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Pipeline error ${res.status}`);
+        const detail = err.detail ?? `Pipeline error ${res.status}`;
+        throw new Error(formatPipelineError(detail));
       }
 
       const envelope = await res.json();

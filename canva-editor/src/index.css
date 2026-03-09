@@ -62,3 +62,24 @@ body {
   color: var(--text-lo);
   margin-bottom: 6px;
 }
+
+/* AI Slide Assistant — light theme to match editor sidebar */
+.ai-panel-light .panel-input {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  color: #111827;
+}
+.ai-panel-light .panel-input::placeholder {
+  color: #9ca3af;
+}
+.ai-panel-light .panel-input:focus {
+  border-color: #0891b2;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.2);
+}
+.ai-panel-light .scrollbar-dark::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+.ai-panel-light .scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

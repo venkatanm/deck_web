@@ -1,0 +1,15 @@
+# Cloudflare Tunnel config for velox-decks (datavelox.com)
+# Copy to C:\cloudflared\config.yml (or where you run cloudflared from).
+# Both hostnames point to the same Nginx; the app routes by host.
+
+tunnel: 9966de43-faa0-4d0b-a750-6eb2bac9da16
+credentials-file: C:\Users\UserAdmin\.cloudflared\9966de43-faa0-4d0b-a750-6eb2bac9da16.json
+
+ingress:
+  - hostname: www.datavelox.com
+    service: http://localhost:80
+  - hostname: datavelox.com
+    service: http://localhost:80
+  - hostname: decks.datavelox.com
+    service: http://localhost:80
+  - service: http_status:404
