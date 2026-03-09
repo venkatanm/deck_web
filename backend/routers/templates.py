@@ -462,8 +462,20 @@ def _parse_text_frame(tf, base: dict, slide_w_emu: int, slide_h_emu: int, canvas
     italic = False
     font_family = "Inter"
 
+    has_bullets = False
     for para in tf.paragraphs:
         para_text = "".join(run.text for run in para.runs)
+        # Strip corrupted bullet chars (Wingdings/Symbol → ?, ??, ???, or PUA codepoints)
+        import re as _re
+        para_text = _re.sub(r'^[\?\u2022\u2023\u25cf\u25cb\u25a0\u25aa\u25ba\u25b8\u2013\u2014\u2015\u2043\u00b7\uf0b7\uf076\uf0a7\uf0d8\uf0fc]+\s*', '', para_text)
+        # Detect PPTX-level bullet formatting
+        pPr = para._p.find('{http://schemas.openxmlformats.org/drawingml/2006/main}pPr')
+        if pPr is not None:
+            buChar = pPr.find('{http://schemas.openxmlformats.org/drawingml/2006/main}buChar')
+            buAutoNum = pPr.find('{http://schemas.openxmlformats.org/drawingml/2006/main}buAutoNum')
+            buNone = pPr.find('{http://schemas.openxmlformats.org/drawingml/2006/main}buNone')
+            if (buChar is not None or buAutoNum is not None) and buNone is None:
+                has_bullets = True
         paragraphs_text.append(para_text)
 
         if para.runs:
@@ -507,7 +519,7 @@ def _parse_text_frame(tf, base: dict, slide_w_emu: int, slide_h_emu: int, canvas
     elif italic:
         font_style = "italic"
 
-    return {
+    result = {
         **base,
         "type": "text",
         "content": full_text,
@@ -518,6 +530,9 @@ def _parse_text_frame(tf, base: dict, slide_w_emu: int, slide_h_emu: int, canvas
         "fill": fill_color,
         "align": align,
     }
+    if has_bullets:
+        result["listType"] = "bullet"
+    return result
 
 
 def _get_placeholder_font_size(ph_shape, ph_type: str) -> int:

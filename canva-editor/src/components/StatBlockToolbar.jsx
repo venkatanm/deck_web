@@ -26,17 +26,28 @@ const ToolBtn = ({ onClick, active, disabled, title, children }) => (
 const ColorPickerBtn = ({ color, onChange, title }) => {
   const [open, setOpen] = React.useState(false);
   const [localColor, setLocalColor] = React.useState(color || "#000000");
+  const [dropPos, setDropPos] = React.useState({ top: 0, left: 0 });
+  const btnRef = React.useRef(null);
 
   React.useEffect(() => {
     setLocalColor(color || "#000000");
   }, [color]);
 
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen((o) => !o);
+  };
+
   return (
     <div className="relative flex-shrink-0">
       <button
+        ref={btnRef}
         type="button"
         title={title}
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleOpen}
         className="flex flex-col items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 transition-colors"
       >
         <div
@@ -47,11 +58,12 @@ const ColorPickerBtn = ({ color, onChange, title }) => {
       {open && (
         <>
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[9998]"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute top-10 left-0 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-3">
+          <div className="fixed z-[9999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 min-w-[140px]"
+            style={{ top: dropPos.top, left: dropPos.left }}>
             <input
               type="color"
               value={localColor}
@@ -73,7 +85,7 @@ const ColorPickerBtn = ({ color, onChange, title }) => {
                   onChange(c);
                 }
               }}
-              className="mt-2 w-full text-center text-xs border border-gray-200 rounded-md px-2 py-1 font-mono"
+              className="mt-2 w-full text-center text-xs border border-gray-200 rounded-md px-2 py-1 font-mono text-gray-900"
               maxLength={7}
             />
           </div>
@@ -251,6 +263,54 @@ export default function StatBlockToolbar({ el }) {
             value={el.value || ""}
             onChange={(e) => update({ value: e.target.value })}
           />
+        </>
+      )}
+
+      {el.subtype === "rankedList" && (
+        <>
+          <input
+            className="text-xs text-gray-900 border border-gray-200 rounded px-2 py-1 w-24"
+            placeholder="Title"
+            value={el.title || ""}
+            onChange={(e) => update({ title: e.target.value })}
+          />
+          <Divider />
+          {(el.items || []).map((item, i) => (
+            <div key={i} className="flex items-center gap-1 flex-shrink-0">
+              <input
+                className="text-xs text-gray-900 border border-gray-200 rounded px-1.5 py-1 w-20"
+                placeholder="Label"
+                value={item.label || ""}
+                onChange={(e) => {
+                  const items = [...(el.items || [])];
+                  items[i] = { ...items[i], label: e.target.value };
+                  update({ items });
+                }}
+              />
+              <input
+                type="number"
+                className="text-xs text-gray-900 border border-gray-200 rounded px-1 py-1 w-12"
+                placeholder="%"
+                value={item.value ?? 0}
+                onChange={(e) => {
+                  const items = [...(el.items || [])];
+                  items[i] = { ...items[i], value: Number(e.target.value) };
+                  update({ items });
+                }}
+              />
+            </div>
+          ))}
+          <ToolBtn
+            title="Add item"
+            onClick={() => {
+              const items = [...(el.items || [])];
+              const colors = ["#7c3aed", "#8b5cf6", "#a78bfa", "#c4b5fd", "#6d28d9"];
+              items.push({ label: "New", value: 10, color: colors[items.length % colors.length] });
+              update({ items });
+            }}
+          >
+            <span className="text-xs font-bold">+</span>
+          </ToolBtn>
         </>
       )}
 
