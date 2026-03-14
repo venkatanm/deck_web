@@ -18,6 +18,7 @@
  *   image-content    - Image left/right + text
  *   flowchart        - Process steps
  *   full-bleed-text  - Large centered statement
+ *   agenda           - Numbered agenda/table of contents
  */
 
 export const CONTENT_SCHEMA_VERSION = "2.0";

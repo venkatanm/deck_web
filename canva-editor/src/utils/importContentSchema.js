@@ -26,7 +26,7 @@ function mkText(x, y, w, content, fontSize, fill, extra = {}) {
     x,
     y,
     width: w,
-    height: fontSize * (extra.lineHeight || 1.4),
+    height: extra.height ?? (fontSize * (extra.lineHeight || 1.4) * 10),
     text: content,
     fontSize,
     fill,
@@ -296,21 +296,25 @@ function buildTimeline(content, W, H, primary, bg, font) {
 }
 
 function buildSectionDivider(content, W, H, primary, bg, font) {
+  const titleFs = Math.min(60, W * 0.065);
+  const titleH = titleFs * 1.3;
+  const titleY = H / 2 - titleH / 2 - (content.subtitle ? 20 : 0);
+  const subtitleY = titleY + titleH + 16;
   return [
     mkRect(0, 0, W, H, primary),
     mkText(
       60,
-      H / 2 - 60,
+      titleY,
       W - 120,
       content.title || "",
-      Math.min(60, W * 0.065),
+      titleFs,
       "#ffffff",
-      { bold: true, fontFamily: font, align: "center" }
+      { bold: true, fontFamily: font, align: "center", height: titleH }
     ),
     content.subtitle &&
       mkText(
         60,
-        H / 2 + 30,
+        subtitleY,
         W - 120,
         content.subtitle,
         20,
@@ -553,6 +557,59 @@ function buildTeam(content, W, H, primary, bg, font) {
   return elements;
 }
 
+function buildAgenda(content, W, H, primary, bg, font) {
+  const items = content.items || content.points || [];
+  const n = items.length;
+  const pad = 40;
+  const headerH = 80;
+  const availH = H - headerH - pad;
+  const itemH = Math.min(60, availH / Math.max(1, n));
+  const startY = headerH;
+
+  const elements = [
+    mkRect(0, 0, W, H, bg || "#ffffff"),
+    mkRect(0, 0, W, 5, primary),
+    mkText(pad, 22, W - pad * 2, content.headline || "Agenda", 32, "#1e293b", {
+      bold: true,
+      fontFamily: font,
+    }),
+    mkLine(pad, 70, W - pad * 2, "#e2e8f0", { strokeWidth: 1 }),
+  ];
+
+  items.forEach((item, i) => {
+    const y = startY + i * itemH;
+    if (y + itemH > H - 10) return; // skip if overflows
+    const label = typeof item === "string" ? item : item.label || item.title || "";
+    // Number circle
+    elements.push(
+      mkRect(pad, y + 4, 28, 28, primary, { cornerRadius: 14 })
+    );
+    elements.push(
+      mkText(pad, y + 6, 28, String(i + 1), 14, "#ffffff", {
+        bold: true,
+        fontFamily: font,
+        align: "center",
+        height: 24,
+      })
+    );
+    // Item text
+    elements.push(
+      mkText(pad + 40, y + 6, W - pad * 2 - 50, label, 16, "#1e293b", {
+        fontFamily: font,
+        height: itemH - 8,
+      })
+    );
+    // Separator line
+    if (i < n - 1) {
+      elements.push(
+        mkLine(pad + 40, y + itemH - 2, W - pad * 2 - 50, "#f1f5f9", { strokeWidth: 1 })
+      );
+    }
+  });
+
+  return elements;
+}
+
 // ── semantic_type → slideType fallback mapping ──
 // Used only when slideType is missing from the pipeline payload.
 const SEMANTIC_TO_SLIDE_TYPE = {
@@ -641,6 +698,9 @@ export function buildSlideElements(slide, brandKit, width, height) {
     case "team":
       elements = buildTeam(content, W, H, primary, "#ffffff", headingFont);
       break;
+    case "agenda":
+      elements = buildAgenda(content, W, H, primary, "#ffffff", headingFont);
+      break;
     default:
       elements = buildBullets(content, W, H, primary, "#ffffff", headingFont);
   }
@@ -725,6 +785,9 @@ export function importContentSchema(schema, brandKit, canvasSize) {
         break;
       case "team":
         elements = buildTeam(slide.content, W, H, primary, "#ffffff", headingFont);
+        break;
+      case "agenda":
+        elements = buildAgenda(slide.content, W, H, primary, "#ffffff", headingFont);
         break;
       default:
         elements = buildBullets(slide.content, W, H, primary, "#ffffff", headingFont);
