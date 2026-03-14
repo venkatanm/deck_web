@@ -1996,6 +1996,14 @@ export function Canvas({ onContextMenu }) {
     const page = (s.pages || []).find((p) => p.id === s.currentPageId);
     return page?.backgroundColor ?? null;
   });
+  const currentPageHookBorder = useEditorStore((s) => {
+    const page = (s.pages || []).find((p) => p.id === s.currentPageId);
+    return page?.hookBorder;
+  });
+  const currentPageHookTint = useEditorStore((s) => {
+    const page = (s.pages || []).find((p) => p.id === s.currentPageId);
+    return page?.hookTint;
+  });
   const elements = useEditorStore((s) => {
     const page = (s.pages || []).find((p) => p.id === s.currentPageId);
     return page?.elements || EMPTY_ELEMENTS;
@@ -2413,6 +2421,28 @@ export function Canvas({ onContextMenu }) {
             listening={false}
             perfectDrawEnabled={false}
           />
+          {currentPageHookTint && (
+            <Rect
+              name="hook-tint"
+              width={canvasSize.width}
+              height={canvasSize.height}
+              fill={currentPageHookTint}
+              listening={false}
+              perfectDrawEnabled={false}
+            />
+          )}
+          {currentPageHookBorder?.enabled && (
+            <Rect
+              name="hook-border"
+              x={0}
+              y={0}
+              width={currentPageHookBorder.width || 8}
+              height={canvasSize.height}
+              fill={currentPageHookBorder.color}
+              listening={false}
+              perfectDrawEnabled={false}
+            />
+          )}
           {showGrid &&
             Array.from({ length: Math.ceil(canvasSize.width / 40) }, (_, i) => (
               <Line

@@ -45,6 +45,7 @@ export default function ImportFromAIModal({ onClose }) {
   const clearSelection = useEditorStore((s) => s.clearSelection);
   const setTitle = useEditorStore((s) => s.setTitle);
   const _snapshot = useEditorStore((s) => s._snapshot);
+  const setDocumentBrief = useEditorStore((s) => s.setDocumentBrief);
 
   const doImport = (schema) => {
     _snapshot(true);
@@ -71,6 +72,9 @@ export default function ImportFromAIModal({ onClose }) {
     setCurrentPageId(pages[0].id);
     clearSelection();
     setTitle(schema.meta?.title || "Imported Deck");
+    if (schema.meta?.document_brief) {
+      setDocumentBrief(schema.meta.document_brief);
+    }
 
     if (template?.canvasSize) {
       useEditorStore.getState().setCanvasSize(targetCanvasSize);

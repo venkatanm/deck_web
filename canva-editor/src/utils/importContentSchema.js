@@ -553,15 +553,42 @@ function buildTeam(content, W, H, primary, bg, font) {
   return elements;
 }
 
+// ── semantic_type → slideType fallback mapping ──
+// Used only when slideType is missing from the pipeline payload.
+const SEMANTIC_TO_SLIDE_TYPE = {
+  data: "stat-grid",
+  narrative: "bullets",
+  comparison: "comparison",
+  section_break: "section-divider",
+  summary: "bullets",
+};
+
+function resolveSlideType(slide) {
+  if (slide.slideType) return slide.slideType;
+  if (slide.semantic_type) return SEMANTIC_TO_SLIDE_TYPE[slide.semantic_type] || "bullets";
+  return "bullets";
+}
+
+// ── Hook metadata builder ─────────────────────
+// Returns page-level metadata for is_hook slides.
+function buildHookMeta(slide, primaryColor) {
+  if (!slide.is_hook) return {};
+  const hookColor = primaryColor || "#7c3aed";
+  return {
+    hookBorder: { enabled: true, color: hookColor, width: 8, side: "left" },
+    hookTint: hookColor + "0D",
+  };
+}
+
 // ── Single-slide builder (for streaming) ──────
 
 /**
  * Builds elements for a single slide. Used by the pipeline stream.
- * @param {Object} slide - { slideType, content, title? }
+ * @param {Object} slide - { slideType, semantic_type?, is_hook?, content, title? }
  * @param {Object} brandKit - Brand kit from store
  * @param {number} width - Canvas width
  * @param {number} height - Canvas height
- * @returns {Object[]} Elements array
+ * @returns {{ elements: Object[], pageMeta: Object }} Elements array and page metadata
  */
 export function buildSlideElements(slide, brandKit, width, height) {
   const W = width || 960;
@@ -577,9 +604,10 @@ export function buildSlideElements(slide, brandKit, width, height) {
   const bg = bgColor || "#ffffff";
 
   const content = slide.content || slide;
+  const effectiveType = resolveSlideType(slide);
   let elements = [];
 
-  switch (slide.slideType) {
+  switch (effectiveType) {
     case "cover":
       elements = buildCover(content, W, H, primary, bg, headingFont);
       break;
@@ -617,7 +645,15 @@ export function buildSlideElements(slide, brandKit, width, height) {
       elements = buildBullets(content, W, H, primary, "#ffffff", headingFont);
   }
 
-  return elements.filter(Boolean);
+  // Build page-level semantic metadata
+  const pageMeta = {
+    semantic_type: slide.semantic_type || null,
+    argument_indexes: slide.argument_indexes || [],
+    data_point_indexes: slide.data_point_indexes || [],
+    ...buildHookMeta(slide, primary),
+  };
+
+  return { elements: elements.filter(Boolean), pageMeta };
 }
 
 // ── Main export function ─────────────────────
@@ -653,9 +689,10 @@ export function importContentSchema(schema, brandKit, canvasSize) {
     "#ffffff";
 
   const pages = schema.slides.map((slide, i) => {
+    const effectiveType = resolveSlideType(slide);
     let elements = [];
 
-    switch (slide.slideType) {
+    switch (effectiveType) {
       case "cover":
         elements = buildCover(slide.content, W, H, primary, bg, headingFont);
         break;
@@ -698,11 +735,15 @@ export function importContentSchema(schema, brandKit, canvasSize) {
       name: slide.title || `Slide ${i + 1}`,
       elements: elements.filter(Boolean),
       backgroundColor:
-        slide.slideType === "cover" ||
-        slide.slideType === "section-divider" ||
-        slide.slideType === "full-bleed-text"
+        effectiveType === "cover" ||
+        effectiveType === "section-divider" ||
+        effectiveType === "full-bleed-text"
           ? bg
           : "#ffffff",
+      semantic_type: slide.semantic_type || null,
+      argument_indexes: slide.argument_indexes || [],
+      data_point_indexes: slide.data_point_indexes || [],
+      ...buildHookMeta(slide, primary),
     };
   });
 

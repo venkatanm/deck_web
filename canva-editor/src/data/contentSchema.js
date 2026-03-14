@@ -20,18 +20,36 @@
  *   full-bleed-text  - Large centered statement
  */
 
-export const CONTENT_SCHEMA_VERSION = "1.0";
+export const CONTENT_SCHEMA_VERSION = "2.0";
+
+// Valid semantic_type values (v2)
+export const SEMANTIC_TYPES = [
+  "data",
+  "narrative",
+  "comparison",
+  "section_break",
+  "summary",
+];
 
 // Validates a content schema object.
 // Returns { valid: boolean, errors: string[] }
+// Supports both v1 and v2 schemas (v2 fields are optional).
 export function validateContentSchema(schema) {
   const errors = [];
   if (!schema.meta) errors.push("Missing meta field");
   if (!schema.meta?.title) errors.push("Missing meta.title");
   if (!Array.isArray(schema.slides)) errors.push("slides must be an array");
   schema.slides?.forEach((slide, i) => {
-    if (!slide.slideType) errors.push(`Slide ${i}: missing slideType`);
+    if (!slide.slideType && !slide.semantic_type)
+      errors.push(`Slide ${i}: missing slideType or semantic_type`);
     if (!slide.content) errors.push(`Slide ${i}: missing content`);
+    if (
+      slide.semantic_type &&
+      !SEMANTIC_TYPES.includes(slide.semantic_type)
+    )
+      errors.push(
+        `Slide ${i}: invalid semantic_type "${slide.semantic_type}"`
+      );
   });
   return { valid: errors.length === 0, errors };
 }
@@ -50,16 +68,35 @@ export const DOCUMENT_TYPE_TO_TEMPLATE = {
 
 // Example valid schema for testing the import engine:
 export const EXAMPLE_CONTENT_SCHEMA = {
-  version: "1.0",
+  version: "2.0",
   meta: {
     title: "Example Deck",
     documentType: "pitch_deck",
     suggestedTemplate: "pitch-deck-dark",
     slideCount: 5,
+    document_brief: {
+      thesis: "Our platform is growing 3x YoY with strong retention",
+      narrative_hook: "94% retention proves product-market fit",
+      key_arguments: [
+        "Revenue growing 340% YoY",
+        "12K customers acquired organically",
+        "94% retention rate",
+      ],
+      notable_data_points: [
+        "$2.4M ARR",
+        "12K customers",
+        "94% retention",
+        "Q4 revenue $520K",
+      ],
+      doc_type: "pitch_deck",
+      audience: "Series A investors",
+      tone: "confident",
+    },
   },
   slides: [
     {
       slideType: "cover",
+      semantic_type: "section_break",
       content: {
         title: "Our Company",
         subtitle: "Changing how the world works",
@@ -68,6 +105,10 @@ export const EXAMPLE_CONTENT_SCHEMA = {
     },
     {
       slideType: "stat-grid",
+      semantic_type: "data",
+      is_hook: true,
+      argument_indexes: [0, 1, 2],
+      data_point_indexes: [0, 1, 2],
       content: {
         headline: "Traction",
         stats: [

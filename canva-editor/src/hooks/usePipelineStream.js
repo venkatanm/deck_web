@@ -20,6 +20,7 @@ export function usePipelineStream() {
   const setPages = useEditorStore((s) => s.setPages);
   const setCurrentPageId = useEditorStore((s) => s.setCurrentPageId);
   const setPipelineStream = useEditorStore((s) => s.setPipelineStream);
+  const setDocumentBrief = useEditorStore((s) => s.setDocumentBrief);
   const resetPipelineStream = useEditorStore((s) => s.resetPipelineStream);
 
   const connect = useCallback(() => {
@@ -58,11 +59,14 @@ export function usePipelineStream() {
           totalSlides: msg.totalSlides || 0,
           slideCount: 0,
         });
+        if (msg.document_brief) {
+          setDocumentBrief(msg.document_brief);
+        }
         setPages([]);
       }
 
       if (msg.type === "slide") {
-        const elements = buildSlideElements(
+        const { elements, pageMeta } = buildSlideElements(
           msg.slide,
           brandKit,
           canvasSize.width,
@@ -92,6 +96,7 @@ export function usePipelineStream() {
               name: slide.title || `Slide ${(msg.index ?? 0) + 1}`,
               elements,
               backgroundColor,
+              ...pageMeta,
             },
           ],
           brandKit,
@@ -143,6 +148,7 @@ export function usePipelineStream() {
     setPages,
     setCurrentPageId,
     setPipelineStream,
+    setDocumentBrief,
   ]);
 
   const disconnect = useCallback(() => {

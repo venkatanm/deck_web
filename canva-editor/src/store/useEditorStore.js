@@ -58,6 +58,10 @@ const useEditorStore = create((set, get) => ({
   history: [],
   future: [],
 
+  // Deck-level brief from pipeline (thesis, arguments, audience, etc.)
+  documentBrief: null,
+  setDocumentBrief: (brief) => set({ documentBrief: brief }),
+
   // Pipeline stream state
   pipelineStream: {
     status: 'idle',
@@ -495,17 +499,33 @@ const useEditorStore = create((set, get) => ({
     if (isValidPage(page)) {
       // Called with a real page object (e.g. from
       // a programmatic page-insert flow). Add it
-      // and switch to it.
+      // and switch to it. Apply semantic defaults.
+      const normalized = {
+        ...page,
+        semantic_type: page.semantic_type ?? null,
+        argument_indexes: page.argument_indexes ?? [],
+        data_point_indexes: page.data_point_indexes ?? [],
+        hookBorder: page.hookBorder ?? { enabled: false },
+        hookTint: page.hookTint ?? null,
+      };
       set({
-        pages: [...pagesList, page],
-        currentPageId: page.id,
+        pages: [...pagesList, normalized],
+        currentPageId: normalized.id,
         selectedId: null,
         selectedIds: [],
       });
     } else {
       // Called with no argument or an event object.
       // Create a blank page and switch to it.
-      const newPage = { id: uuidv4(), elements: [] };
+      const newPage = {
+        id: uuidv4(),
+        elements: [],
+        semantic_type: null,
+        argument_indexes: [],
+        data_point_indexes: [],
+        hookBorder: { enabled: false },
+        hookTint: null,
+      };
       set({
         pages: [...pagesList, newPage],
         currentPageId: newPage.id,
@@ -799,5 +819,8 @@ const useEditorStore = create((set, get) => ({
     }
   },
 }));
+
+// Expose store for debugging (accessible via window.__store.getState())
+if (typeof window !== 'undefined') window.__store = useEditorStore;
 
 export default useEditorStore;

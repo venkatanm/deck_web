@@ -247,7 +247,7 @@ export default function AIChatPanel({ onClose }) {
     const primary = brandKit?.colors?.[0]?.hex || "#7c3aed";
 
     const newPages = schema.slides.map((slide, i) => {
-      const elements = buildSlideElements(slide, brandKit, W, H);
+      const { elements, pageMeta } = buildSlideElements(slide, brandKit, W, H);
       const isDark =
         slide.slideType === "cover" ||
         slide.slideType === "section-divider" ||
@@ -264,6 +264,7 @@ export default function AIChatPanel({ onClose }) {
         name: slide.content?.headline || slide.content?.title || `Slide ${i + 1}`,
         elements,
         backgroundColor: bgColor,
+        ...pageMeta,
       };
     });
 
